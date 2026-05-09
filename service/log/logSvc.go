@@ -7,6 +7,7 @@ import (
 
 	"core/contract/log"
 	"core/entity/config"
+	"core/enum/trace"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -43,6 +44,11 @@ func (b LogSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 }
 
 func (b LogSvc) getTraceId(ctx context.Context) string {
+	traceId := ctx.Value(trace.TraceIdKey)
+	if traceId != nil {
+		return traceId.(string)
+	}
+
 	return ""
 }
 
