@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"core/config"
 	"core/contract/api"
+	"core/entity/config"
 	envEnum "core/enum/env"
 	"core/enum/response"
 	coreError "core/service/error"

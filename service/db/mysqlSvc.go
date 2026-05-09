@@ -2,11 +2,13 @@ package db
 
 import (
 	"context"
+
 	"core/contract/log"
+	"core/entity/config"
+
 	"fmt"
 	"time"
 
-	"core/config"
 	"core/contract/db"
 
 	"gorm.io/driver/mysql"

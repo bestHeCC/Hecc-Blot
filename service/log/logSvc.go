@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"core/config"
+	"core/entity/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

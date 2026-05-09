@@ -1,10 +1,10 @@
 package config
 
 import (
-	"core/config/cache"
-	"core/config/db"
-	"core/config/log"
-	"core/config/server"
+	"core/entity/config/cache"
+	"core/entity/config/db"
+	"core/entity/config/log"
+	"core/entity/config/server"
 )
 
 type Config struct {

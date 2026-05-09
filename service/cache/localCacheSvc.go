@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	cacheConf "core/config/cache"
 	"core/contract/cache"
+	cacheConf "core/entity/config/cache"
 )
 
 type localCacheSvc struct {

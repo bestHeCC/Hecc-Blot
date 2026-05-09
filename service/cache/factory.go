@@ -1,8 +1,8 @@
 package cache
 
 import (
-	cacheConf "core/config/cache"
 	"core/contract/cache"
+	cacheConf "core/entity/config/cache"
 )
 
 type Factory struct {

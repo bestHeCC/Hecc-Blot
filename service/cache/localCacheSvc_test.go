@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"core/config/cache"
+	"core/entity/config/cache"
 
 	"github.com/stretchr/testify/assert"
 )

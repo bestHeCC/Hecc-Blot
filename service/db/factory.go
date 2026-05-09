@@ -2,10 +2,12 @@ package db
 
 import (
 	"context"
+
 	"core/contract/log"
+	"core/entity/config"
+
 	"fmt"
 
-	"core/config"
 	"core/contract/db"
 	dbEnum "core/enum/db"
 )
