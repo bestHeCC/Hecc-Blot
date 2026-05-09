@@ -11,6 +11,7 @@ import (
 
 	"core/contract/db"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -152,21 +153,21 @@ func (gl *iLogGormLogger) Trace(ctx context.Context, begin time.Time, fc func() 
 	sql, rows := fc()
 	switch {
 	case err != nil:
-		gl.logger.Error(ctx, "SQL Trace",
-			"error", err,
-			"elapsed", elapsed.String(),
-			"rows", rows,
-			"sql", sql)
+		gl.Error(ctx, "SQL Trace",
+			zap.Error(err),
+			zap.Duration("elapsed", elapsed),
+			zap.Int64("rows", rows),
+			zap.String("sql", sql))
 	case elapsed > gl.slowThreshold && gl.slowThreshold > 0:
-		gl.logger.Warn(ctx, "Slow SQL",
-			"elapsed", elapsed.String(),
-			"rows", rows,
-			"sql", sql)
+		gl.Warn(ctx, "Slow SQL",
+			zap.Duration("elapsed", elapsed),
+			zap.Int64("rows", rows),
+			zap.String("sql", sql))
 	default:
-		gl.logger.Info(ctx, "SQL Trace",
-			"elapsed", elapsed.String(),
-			"rows", rows,
-			"sql", sql)
+		gl.Info(ctx, "SQL Trace",
+			zap.Duration("elapsed", elapsed),
+			zap.Int64("rows", rows),
+			zap.String("sql", sql))
 	}
 }
 

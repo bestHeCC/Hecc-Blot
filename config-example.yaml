@@ -1,0 +1,38 @@
+server:
+  env: dev
+  name: core
+  port: 9500
+cache:
+  local:
+    clearInterval: 10
+  redis:
+    addr: 127.0.0.1:6379
+    password:
+    poolSize: 10
+    db: 0
+db:
+  mysql:
+    ip: 127.0.0.1
+    port: 3306
+    username: root
+    password: 123456
+    dbName: core
+    connectTimeout: 3
+    maxIdleConn: 10
+    maxOpenConn: 200
+    connMaxLifetime: 3600
+    slowThreshold: 200 # 慢sql阈值
+
+log:
+  rootDir: ./runtime/logs # 日志根目录
+  maxBackups: 3 # 旧文件的最大个数
+  maxSize: 500 # 日志文件最大大小（MB）
+  maxAge: 28 # 旧文件的最大保留天数
+  compress: true # 是否压缩
+  sls: # 阿里sls配置
+    enabled: true
+    endpoint:
+    accessKey:
+    secretKey:
+    project:
+    logStore:

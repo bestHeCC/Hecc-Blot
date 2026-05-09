@@ -1,11 +1,11 @@
 package api
 
 import (
-	"context"
-
 	coreError "core/contract/error"
+
+	"github.com/gin-gonic/gin"
 )
 
 type IApi interface {
-	Call(ctx context.Context) (interface{}, coreError.IError)
+	Call(ctx *gin.Context) (interface{}, coreError.IError)
 }

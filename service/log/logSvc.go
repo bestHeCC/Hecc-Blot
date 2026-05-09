@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"core/contract/log"
 	"core/entity/config"
 
 	"go.uber.org/zap"
@@ -61,10 +62,18 @@ func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Fie
 	return zapFields
 }
 
-func NewLogger(logConf *config.Config, levels map[zapcore.Level]string) (*zap.Logger, error) {
+func NewLogger(logConf *config.Config) (log.ILog, error) {
 	var rootDir string
 	var maxSize, maxBackups, maxAge int
 	var compress bool
+
+	levels := map[zapcore.Level]string{
+		zapcore.DebugLevel: "debug",
+		zapcore.InfoLevel:  "info",
+		zapcore.WarnLevel:  "warn",
+		zapcore.ErrorLevel: "error",
+		zapcore.PanicLevel: "panic",
+	}
 
 	rootDir = logConf.Log.RootDir
 	maxSize = logConf.Log.MaxSize
@@ -113,5 +122,7 @@ func NewLogger(logConf *config.Config, levels map[zapcore.Level]string) (*zap.Lo
 		))
 	}
 
-	return zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)), nil
+	return LogSvc{
+		logger: zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)),
+	}, nil
 }

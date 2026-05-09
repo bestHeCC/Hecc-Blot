@@ -1,2 +1,9 @@
 .idea/
 .vscode/
+config.yaml
+
+/api
+/entity/request
+/model
+/runtime
+/middleware
