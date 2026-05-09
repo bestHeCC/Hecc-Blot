@@ -10,16 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var localConf = &log.LocalConfig{
-	RootDir:    "./runtime/logs",
-	MaxSize:    1,
-	MaxBackups: 3,
-	MaxAge:     7,
-	Compress:   false,
+var conf = &log.SlsConfig{
+	Enable:      true,
+	Endpoint:    "cn-hangzhou.log.aliyuncs.com",
+	AccessKey:   "REDACTED_AK",
+	SecretKey:   "REDACTED_SK",
+	SecretToken: "",
+	Project:     "hecc-go",
+	LogStore:    "core",
 }
 
-func TestLogSvc(t *testing.T) {
-	logger, err := NewLogSvc(localConf)
+func TestSlsSvc(t *testing.T) {
+	logger, err := NewSlsSvc(conf)
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 

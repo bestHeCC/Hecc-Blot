@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"core/contract/log"
-	"core/entity/config"
-	"core/enum/trace"
+	logConfig "core/entity/config/log"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,37 +18,19 @@ type LogSvc struct {
 }
 
 func (b LogSvc) Debug(ctx context.Context, msg string, fields ...interface{}) {
-	traceId := b.getTraceId(ctx)
-	b.logger.Debug(msg, b.buildFields(traceId, fields...)...)
+	b.logger.Debug(msg, b.buildFields(getTraceId(ctx), fields...)...)
 }
 
 func (b LogSvc) Error(ctx context.Context, msg string, fields ...interface{}) {
-	traceId := b.getTraceId(ctx)
-	b.logger.Error(msg, b.buildFields(traceId, fields...)...)
+	b.logger.Error(msg, b.buildFields(getTraceId(ctx), fields...)...)
 }
 
 func (b LogSvc) Info(ctx context.Context, msg string, fields ...interface{}) {
-	traceId := b.getTraceId(ctx)
-	b.logger.Info(msg, b.buildFields(traceId, fields...)...)
-}
-
-func (b LogSvc) Panic(ctx context.Context, msg string, fields ...interface{}) {
-	traceId := b.getTraceId(ctx)
-	b.logger.Panic(msg, b.buildFields(traceId, fields...)...)
+	b.logger.Info(msg, b.buildFields(getTraceId(ctx), fields...)...)
 }
 
 func (b LogSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
-	traceId := b.getTraceId(ctx)
-	b.logger.Warn(msg, b.buildFields(traceId, fields...)...)
-}
-
-func (b LogSvc) getTraceId(ctx context.Context) string {
-	traceId := ctx.Value(trace.TraceIdKey)
-	if traceId != nil {
-		return traceId.(string)
-	}
-
-	return ""
+	b.logger.Warn(msg, b.buildFields(getTraceId(ctx), fields...)...)
 }
 
 func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Field {
@@ -68,7 +49,7 @@ func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Fie
 	return zapFields
 }
 
-func NewLogger(logConf *config.Config) (log.ILog, error) {
+func NewLogSvc(logConf *logConfig.LocalConfig) (log.ILog, error) {
 	var rootDir string
 	var maxSize, maxBackups, maxAge int
 	var compress bool
@@ -81,11 +62,11 @@ func NewLogger(logConf *config.Config) (log.ILog, error) {
 		zapcore.PanicLevel: "panic",
 	}
 
-	rootDir = logConf.Log.RootDir
-	maxSize = logConf.Log.MaxSize
-	maxBackups = logConf.Log.MaxBackups
-	maxAge = logConf.Log.MaxAge
-	compress = logConf.Log.Compress
+	rootDir = logConf.RootDir
+	maxSize = logConf.MaxSize
+	maxBackups = logConf.MaxBackups
+	maxAge = logConf.MaxAge
+	compress = logConf.Compress
 
 	// 判断目录是否存在
 	_, err := os.Stat(rootDir)
@@ -105,7 +86,7 @@ func NewLogger(logConf *config.Config) (log.ILog, error) {
 		encoder.AppendString(time.Format("[" + "2006-01-02 15:04:05.000" + "]"))
 	}
 	encoderConfig.EncodeLevel = func(l zapcore.Level, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(string(logConf.Server.Env) + "." + l.String())
+		encoder.AppendString(l.String())
 	}
 
 	// 设置编码器
@@ -116,7 +97,7 @@ func NewLogger(logConf *config.Config) (log.ILog, error) {
 		cores = append(cores, zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(&lumberjack.Logger{
-				Filename:   rootDir + "/" + logConf.Server.Name + "_" + suffix + ".log",
+				Filename:   rootDir + "/" + suffix + ".log",
 				MaxSize:    maxSize,
 				MaxBackups: maxBackups,
 				MaxAge:     maxAge,
