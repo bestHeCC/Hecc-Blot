@@ -13,11 +13,11 @@ import (
 var conf = &log.SlsConfig{
 	Enable:      true,
 	Endpoint:    "cn-hangzhou.log.aliyuncs.com",
-	AccessKey:   "REDACTED_AK",
-	SecretKey:   "REDACTED_SK",
+	AccessKey:   "",
+	SecretKey:   "",
 	SecretToken: "",
-	Project:     "hecc-go",
-	LogStore:    "core",
+	Project:     "",
+	LogStore:    "",
 }
 
 func TestSlsSvc(t *testing.T) {
