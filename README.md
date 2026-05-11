@@ -41,7 +41,10 @@ Hecc-Go-Core/
 ```
 
 ## 快速开始
-完整示例可以参考[example.go](example.go)
+完整示例可以参考[example.go](example.go)  
+各组件使用示例可以参考单测，单测在service目录下对应组件目录中可以找到  
+这里以[mysqlSvc_test.go](service/db/mysqlSvc_test.go)为例
+
 ### 1. 项目初始化
 
 ```go
