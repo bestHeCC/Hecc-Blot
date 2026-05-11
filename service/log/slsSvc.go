@@ -70,7 +70,7 @@ func newLogContent(key, value string) *sls.LogContent {
 	}
 }
 
-func NewSlsSvc(conf *log.SlsConfig) (ilog.ILog, error) {
+func newSlsSvc(conf *log.SlsConfig) (ilog.ILog, error) {
 	provider := sls.NewStaticCredentialsProvider(conf.AccessKey, conf.SecretKey, conf.SecretToken)
 	client := sls.CreateNormalInterfaceV2(conf.Endpoint, provider)
 

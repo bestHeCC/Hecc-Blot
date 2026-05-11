@@ -21,7 +21,7 @@ var conf = &log.SlsConfig{
 }
 
 func TestSlsSvc(t *testing.T) {
-	logger, err := NewSlsSvc(conf)
+	logger, err := newSlsSvc(conf)
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 

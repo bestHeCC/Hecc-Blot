@@ -35,12 +35,12 @@ func main() {
 		allErrors = append(allErrors, err)
 	}
 
-	logSvc, err := log.NewLogger(config)
+	logSvc, err := log.NewLogger(&config.Log)
 	if err != nil {
 		allErrors = append(allErrors, err)
 	}
 
-	dbFactory, deClearUp, err := db.NewDbFactory(config, logSvc)
+	dbFactory, deClearUp, err := db.NewDbFactory(&config.Db, logSvc)
 	if err != nil {
 		allErrors = append(allErrors, err)
 	}
@@ -65,7 +65,7 @@ func main() {
 	ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
 	ioc.Set(new(iCoreApi.IResponse), responseSvc)
 
-	apiHandle := api.NewApiSvc(config, responseSvc)
+	apiHandle := api.NewApiSvc(&config.Server, responseSvc)
 	register(apiHandle)
 	apiHandle.Listen()
 }

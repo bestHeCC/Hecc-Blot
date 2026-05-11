@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"core/contract/api"
-	"core/entity/config"
+	"core/entity/config/server"
 	envEnum "core/enum/env"
 	"core/enum/response"
 	coreError "core/service/error"
@@ -22,7 +22,7 @@ import (
 )
 
 type ApiHandle struct {
-	config      *config.Config
+	config      *server.Config
 	engine      *gin.Engine
 	responseSvc api.IResponse
 }
@@ -56,7 +56,7 @@ func (f *ApiHandle) Post(apiPath string, apiInstance interface{}) {
 
 func (f *ApiHandle) Listen() {
 	srv := &http.Server{
-		Addr:    ":" + f.config.Server.Port,
+		Addr:    ":" + f.config.Port,
 		Handler: f.engine,
 	}
 
@@ -117,8 +117,8 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 	}
 }
 
-func NewApiSvc(config *config.Config, responseSvc api.IResponse) api.IApiHandle {
-	mode, ok := mapEnv[config.Server.Env]
+func NewApiSvc(config *server.Config, responseSvc api.IResponse) api.IApiHandle {
+	mode, ok := mapEnv[config.Env]
 	if !ok {
 		panic(fmt.Sprintf("无效环境配置:%s", mode))
 	}

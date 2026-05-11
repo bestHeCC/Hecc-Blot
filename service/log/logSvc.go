@@ -49,7 +49,7 @@ func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Fie
 	return zapFields
 }
 
-func NewLogSvc(logConf *logConfig.LocalConfig) (log.ILog, error) {
+func newLogSvc(logConf *logConfig.LocalConfig) (log.ILog, error) {
 	var rootDir string
 	var maxSize, maxBackups, maxAge int
 	var compress bool

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"core/contract/log"
-	"core/entity/config"
+	dbConf "core/entity/config/db"
 
 	"fmt"
 
@@ -31,8 +31,8 @@ func (f Factory) Build(ctx context.Context, v ...dbEnum.Value) db.IDb {
 	return dbSvc
 }
 
-func NewDbFactory(config *config.Config, logger log.ILog) (db.IDbFactory, func(), error) {
-	mysql, clearUp, err := newMysqlSvc(config, logger)
+func NewDbFactory(config *dbConf.Config, logger log.ILog) (db.IDbFactory, func(), error) {
+	mysql, clearUp, err := newMysqlSvc(&config.Mysql, logger)
 	if err != nil {
 		return nil, func() {}, err
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"core/contract/log"
-	"core/entity/config"
+	dbConf "core/entity/config/db"
 
 	"fmt"
 	"time"
@@ -84,24 +84,24 @@ func (m MysqlSvc) WithContext(ctx context.Context) {
 	m.ctx = ctx
 }
 
-func newMysqlSvc(config *config.Config, logger log.ILog) (db.IDb, func(), error) {
+func newMysqlSvc(config *dbConf.MysqlConfig, logger log.ILog) (db.IDb, func(), error) {
 	// 配置 GORM
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&timeout=%ds",
-		config.Db.Mysql.Username,
-		config.Db.Mysql.Password,
-		config.Db.Mysql.Ip,
-		config.Db.Mysql.Port,
-		config.Db.Mysql.DbName,
-		config.Db.Mysql.ConnectTimeout,
+		config.Username,
+		config.Password,
+		config.Ip,
+		config.Port,
+		config.DbName,
+		config.ConnectTimeout,
 	)
 
 	mysqlDb, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
-		DisableForeignKeyConstraintWhenMigrating: true,                                                     // 禁用自动创建外键约束
-		Logger:                                   newILogGormLogger(logger, config.Db.Mysql.SlowThreshold), // 使用 ILog 适配器
+		DisableForeignKeyConstraintWhenMigrating: true,                                            // 禁用自动创建外键约束
+		Logger:                                   newILogGormLogger(logger, config.SlowThreshold), // 使用 ILog 适配器
 	})
 	if err != nil {
 		return nil, func() {}, err
@@ -113,11 +113,11 @@ func newMysqlSvc(config *config.Config, logger log.ILog) (db.IDb, func(), error)
 	}
 
 	// 设置空闲连接池中链接的最大数量
-	sqlDb.SetMaxIdleConns(config.Db.Mysql.MaxIdleConn)
+	sqlDb.SetMaxIdleConns(config.MaxIdleConn)
 	// 设置打开数据库链接的最大数量
-	sqlDb.SetMaxOpenConns(config.Db.Mysql.MaxOpenConn)
+	sqlDb.SetMaxOpenConns(config.MaxOpenConn)
 	// 设置链接可复用的最大时间
-	sqlDb.SetConnMaxLifetime(time.Second * time.Duration(config.Db.Mysql.ConnMaxLifetime))
+	sqlDb.SetConnMaxLifetime(time.Second * time.Duration(config.ConnMaxLifetime))
 
 	return MysqlSvc{
 			db: mysqlDb,

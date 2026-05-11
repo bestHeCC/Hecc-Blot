@@ -19,7 +19,7 @@ var localConf = &log.LocalConfig{
 }
 
 func TestLogSvc(t *testing.T) {
-	logger, err := NewLogSvc(localConf)
+	logger, err := newLogSvc(localConf)
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 
