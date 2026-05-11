@@ -5,6 +5,7 @@ import (
 
 	"core/entity/config/cache"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,96 +16,80 @@ var mockRedisConf = cache.Redis{
 	DB:       0,
 }
 
-func TestRedisSet(t *testing.T) {
+func TestRedisSvc(t *testing.T) {
 	redisSvc := newRedisCacheSvc(&mockRedisConf)
 	defer redisSvc.Close()
 
-	key := "hcc-set"
+	t.Run("set", func(t *testing.T) {
+		key := "hcc-set"
 
-	err := redisSvc.Set(key, "1", 0)
-	assert.Equal(t, nil, err)
-}
+		err := redisSvc.Set(key, "1", 0)
+		assert.Equal(t, nil, err)
+	})
 
-func TestRedisGet(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
+	t.Run("get", func(t *testing.T) {
+		key := "hcc-get"
+		val := "1"
+		err := redisSvc.Set(key, val, 0)
+		assert.Equal(t, nil, err)
 
-	key := "hcc-get"
-	val := "1"
-	_ = redisSvc.Set(key, val, 0)
+		v, err := redisSvc.Get(key)
+		assert.Equal(t, nil, err)
+		assert.Equalf(t, val, v, "取值不一致")
+	})
 
-	v, err := redisSvc.Get(key)
-	assert.Equal(t, nil, err)
-	assert.Equalf(t, val, v, "取值不一致")
-}
+	t.Run("del", func(t *testing.T) {
+		key := "hcc-del"
+		val := "1"
+		err := redisSvc.Set(key, val, 0)
+		assert.Equal(t, nil, err)
 
-func TestRedisDel(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
+		err = redisSvc.Del(key)
+		assert.Equal(t, nil, err)
 
-	key := "hcc-del"
-	val := "1"
-	_ = redisSvc.Set(key, val, 0)
+		_, err = redisSvc.Get(key)
+		assert.Equal(t, redis.Nil, err)
+	})
 
-	err := redisSvc.Del(key)
-	assert.Equal(t, nil, err)
-}
+	t.Run("exists", func(t *testing.T) {
+		key := "hcc-exists"
+		val := "1"
+		err := redisSvc.Set(key, val, 0)
+		assert.Equal(t, nil, err)
 
-func TestRedisExists(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
+		exists, err := redisSvc.Exists(key)
+		assert.Equal(t, nil, err)
+		assert.Equalf(t, true, exists, "key不存在")
+	})
 
-	key := "hcc-exists"
-	val := "1"
-	_ = redisSvc.Set(key, val, 0)
+	t.Run("hset", func(t *testing.T) {
+		key := "hcc-hset"
+		field := "1"
+		val := "1"
+		err := redisSvc.HSet(key, field, val)
+		assert.Equal(t, nil, err)
+	})
 
-	exists, err := redisSvc.Exists(key)
-	assert.Equal(t, nil, err)
-	assert.Equalf(t, true, exists, "值不存在")
-}
+	t.Run("hget", func(t *testing.T) {
+		key := "hcc-hget"
+		field := "1"
+		val := "1"
+		err := redisSvc.HSet(key, field, val)
+		assert.Equal(t, nil, err)
 
-func TestRedisHSet(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
+		v, err := redisSvc.HGet(key, field)
+		assert.Equal(t, nil, err)
+		assert.Equalf(t, val, v, "值不一致")
+	})
 
-	key := "hcc-hset"
-	field := "1"
-	val := "1"
-	err := redisSvc.HSet(key, field, val)
-	assert.Equal(t, nil, err)
-}
+	t.Run("hdel", func(t *testing.T) {
+		key := "hcc-hget"
+		field := "1"
+		val := "1"
+		err := redisSvc.HSet(key, field, val)
+		assert.Equal(t, nil, err)
 
-func TestRedisHGet(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
-
-	key := "hcc-hget"
-	field := "1"
-	val := "1"
-	err := redisSvc.HSet(key, field, val)
-	assert.Equal(t, nil, err)
-
-	v, err := redisSvc.HGet(key, field)
-	assert.Equal(t, nil, err)
-	assert.Equalf(t, val, v, "值不一致")
-}
-
-func TestRedisHDel(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	defer redisSvc.Close()
-
-	key := "hcc-hget"
-	field := "1"
-	val := "1"
-	err := redisSvc.HSet(key, field, val)
-	assert.Equal(t, nil, err)
-
-	err = redisSvc.HDel(key, field)
-	assert.Equal(t, nil, err)
-}
-
-func TestRedisClose(t *testing.T) {
-	redisSvc := newRedisCacheSvc(&mockRedisConf)
-	err := redisSvc.Close()
-	assert.Equal(t, nil, err)
+		err = redisSvc.HDel(key, field)
+		assert.Equal(t, nil, err)
+	})
 }
