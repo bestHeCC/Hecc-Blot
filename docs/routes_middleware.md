@@ -14,7 +14,7 @@ sequenceDiagram
     participant Resp as 响应服务
     
     Client->>MW: HTTP 请求
-    MW->>MW: ReplayMiddleware<br/>TokenMiddleware
+    MW->>MW: Middleware
     MW->>API: 参数绑定 + 校验
     alt 校验失败
         API->>Resp: 返回校验错误
