@@ -5,6 +5,7 @@ import (
 	"core/entity/config/db"
 	"core/entity/config/log"
 	"core/entity/config/server"
+	"core/entity/config/trace"
 )
 
 type Config struct {
@@ -12,4 +13,5 @@ type Config struct {
 	Db     db.Config
 	Log    log.Config
 	Server server.Config
+	Trace  trace.Config
 }

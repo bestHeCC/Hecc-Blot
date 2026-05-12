@@ -101,6 +101,11 @@ func (c *localCacheSvc) del(key string) {
 
 // clearExpired is 定期清除过期缓存
 func (c *localCacheSvc) clearExpired() {
+	// 检查间隔是否有效，无效则不启动清理
+	if c.clearInterval <= 0 {
+		return
+	}
+
 	// 声明定时器
 	timeTicker := time.NewTicker(c.clearInterval)
 	defer timeTicker.Stop()

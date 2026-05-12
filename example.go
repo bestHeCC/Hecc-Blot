@@ -10,6 +10,7 @@ import (
 	iCoreDb "core/contract/db"
 	iCoreError "core/contract/error"
 	iCoreLog "core/contract/log"
+	iCoreTrace "core/contract/trace"
 	entityApi "core/entity/api"
 	coreConfig "core/entity/config"
 	"core/enum/response"
@@ -19,6 +20,7 @@ import (
 	errorSvc "core/service/error"
 	"core/service/ioc"
 	"core/service/log"
+	"core/service/trace"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -35,12 +37,17 @@ func main() {
 		allErrors = append(allErrors, err)
 	}
 
+	traceSvc, traceClearUp, err := trace.NewTraceSvc(&config.Trace)
+	if err != nil {
+		allErrors = append(allErrors, err)
+	}
+
 	logSvc, err := log.NewLogger(&config.Log)
 	if err != nil {
 		allErrors = append(allErrors, err)
 	}
 
-	dbFactory, deClearUp, err := db.NewDbFactory(&config.Db, logSvc)
+	dbFactory, dbClearUp, err := db.NewDbFactory(&config.Db, logSvc)
 	if err != nil {
 		allErrors = append(allErrors, err)
 	}
@@ -55,11 +62,15 @@ func main() {
 
 	defer func() {
 		if dbFactory != nil {
-			deClearUp()
+			dbClearUp()
+		}
+		if traceSvc != nil {
+			traceClearUp()
 		}
 	}()
 
 	// 注册至ioc容器
+	ioc.Set(new(iCoreTrace.ITrace), traceSvc)
 	ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
 	ioc.Set(new(iCoreLog.ILog), logSvc)
 	ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
@@ -178,18 +189,16 @@ type AddApi struct {
 }
 
 func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-	newAccount := AccountModel{
-		AccountName: a.Name, // 请求参数自动绑定
-	}
+	data := AccountModel{}
 
-	a.LogSvc.Info(ctx, "add account", "account", newAccount)
+	a.LogSvc.Info(ctx, "log", "account", data)
 
 	// a.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
-	err := a.DbFactory.Build(ctx).Add(&newAccount)
+	err := a.DbFactory.Build(ctx).Where("id = ?", 2).Take(&data)
 	if err != nil {
 		return nil, errorSvc.NewError(response.Fail, err)
 	}
 
 	// 此处只需要关注返回值，接口返回格式由iCoreApi.IResponse统一处理
-	return newAccount, nil
+	return data, nil
 }

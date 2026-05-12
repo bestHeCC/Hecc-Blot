@@ -24,64 +24,66 @@ type MysqlSvc struct {
 	model db.IDbModel
 }
 
-func (m MysqlSvc) Add(entry db.IDbModel) error {
+func (m *MysqlSvc) Add(entry db.IDbModel) error {
 	return m.db.Create(entry).Error
 }
 
-func (m MysqlSvc) Remove(entry db.IDbModel) error {
+func (m *MysqlSvc) Remove(entry db.IDbModel) error {
 	return m.db.Delete(&entry).Error
 }
 
-func (m MysqlSvc) Query(entry db.IDbModel) db.IDb {
+func (m *MysqlSvc) Query(entry db.IDbModel) db.IDb {
 	m.db = m.db.Model(&entry)
 	return m
 }
 
-func (m MysqlSvc) Save(entry db.IDbModel) error {
+func (m *MysqlSvc) Save(entry db.IDbModel) error {
 	return m.db.Updates(entry).Error
 }
 
-func (m MysqlSvc) Count() (int64, error) {
+func (m *MysqlSvc) Count() (int64, error) {
 	var count int64
 	err := m.db.Count(&count).Error
 	return count, err
 }
 
-func (m MysqlSvc) Order(fields ...string) db.IDb {
+func (m *MysqlSvc) Order(fields ...string) db.IDb {
 	m.db = m.db.Order(fields)
 	return m
 }
 
-func (m MysqlSvc) Select(args ...interface{}) db.IDb {
+func (m *MysqlSvc) Select(args ...interface{}) db.IDb {
 	m.db = m.db.Select(args[0], args[1:]...)
 	return m
 }
 
-func (m MysqlSvc) Offset(v int) db.IDb {
+func (m *MysqlSvc) Offset(v int) db.IDb {
 	m.db = m.db.Offset(v)
 	return m
 }
 
-func (m MysqlSvc) Limit(v int) db.IDb {
+func (m *MysqlSvc) Limit(v int) db.IDb {
 	m.db = m.db.Limit(v)
 	return m
 }
 
-func (m MysqlSvc) Where(args ...interface{}) db.IDb {
+func (m *MysqlSvc) Where(args ...interface{}) db.IDb {
 	m.db = m.db.Where(args[0], args[1:]...)
 	return m
 }
 
-func (m MysqlSvc) Take(dst interface{}) error {
+func (m *MysqlSvc) Take(dst interface{}) error {
 	return m.db.Take(dst).Error
 }
 
-func (m MysqlSvc) Find(dst interface{}) error {
+func (m *MysqlSvc) Find(dst interface{}) error {
 	return m.db.Find(dst).Error
 }
 
-func (m MysqlSvc) WithContext(ctx context.Context) {
+func (m *MysqlSvc) WithContext(ctx context.Context) {
+	// 关键：将 context 关联到 GORM
 	m.ctx = ctx
+	m.db = m.db.WithContext(ctx)
 }
 
 func newMysqlSvc(config *dbConf.MysqlConfig, logger log.ILog) (db.IDb, func(), error) {
@@ -119,7 +121,7 @@ func newMysqlSvc(config *dbConf.MysqlConfig, logger log.ILog) (db.IDb, func(), e
 	// 设置链接可复用的最大时间
 	sqlDb.SetConnMaxLifetime(time.Second * time.Duration(config.ConnMaxLifetime))
 
-	return MysqlSvc{
+	return &MysqlSvc{
 			db: mysqlDb,
 		}, func() {
 			sqlDb.Close()

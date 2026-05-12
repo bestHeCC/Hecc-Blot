@@ -18,19 +18,19 @@ type LogSvc struct {
 }
 
 func (b LogSvc) Debug(ctx context.Context, msg string, fields ...interface{}) {
-	b.logger.Debug(msg, b.buildFields(getTraceId(ctx), fields...)...)
+	b.logger.Debug(msg, b.buildFields(getTraceId(extractContext(ctx)), fields...)...)
 }
 
 func (b LogSvc) Error(ctx context.Context, msg string, fields ...interface{}) {
-	b.logger.Error(msg, b.buildFields(getTraceId(ctx), fields...)...)
+	b.logger.Error(msg, b.buildFields(getTraceId(extractContext(ctx)), fields...)...)
 }
 
 func (b LogSvc) Info(ctx context.Context, msg string, fields ...interface{}) {
-	b.logger.Info(msg, b.buildFields(getTraceId(ctx), fields...)...)
+	b.logger.Info(msg, b.buildFields(getTraceId(extractContext(ctx)), fields...)...)
 }
 
 func (b LogSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
-	b.logger.Warn(msg, b.buildFields(getTraceId(ctx), fields...)...)
+	b.logger.Warn(msg, b.buildFields(getTraceId(extractContext(ctx)), fields...)...)
 }
 
 func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Field {

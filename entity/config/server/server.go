@@ -5,7 +5,8 @@ import (
 )
 
 type Config struct {
-	Env  envType.Value
-	Name string
-	Port string
+	Env         envType.Value `mapstructure:"env"`
+	Name        string        `mapstructure:"name"`
+	Port        string        `mapstructure:"port"`
+	EnableTrace bool          `mapstructure:"enable_trace"`
 }

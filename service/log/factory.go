@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	ilog "core/contract/log"
-	logConfig "core/entity/config/log"
+	"core/entity/config/log"
 	"core/enum/trace"
+
+	"github.com/gin-gonic/gin"
 )
 
 func getTraceId(ctx context.Context) string {
@@ -18,7 +20,15 @@ func getTraceId(ctx context.Context) string {
 	return ""
 }
 
-func NewLogger(config *logConfig.Config) (ilog.ILog, error) {
+// extractContext 从 *gin.Context 中提取 context.Context
+func extractContext(ctx context.Context) context.Context {
+	if ginCtx, ok := ctx.(*gin.Context); ok {
+		return ginCtx.Request.Context()
+	}
+	return ctx
+}
+
+func NewLogger(config *log.Config) (ilog.ILog, error) {
 	// 优先使用sls日志服务
 	slsConfig := config.Sls
 	if slsConfig.Enable {

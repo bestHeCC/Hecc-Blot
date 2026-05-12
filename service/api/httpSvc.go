@@ -17,6 +17,7 @@ import (
 	"core/enum/response"
 	coreError "core/service/error"
 	"core/service/ioc"
+	"core/service/trace"
 
 	"github.com/gin-gonic/gin"
 )
@@ -126,9 +127,16 @@ func NewApiSvc(config *server.Config, responseSvc api.IResponse) api.IApiHandle 
 	gin.SetMode(mode)
 	app := gin.New()
 
-	return &ApiHandle{
+	apiHandle := &ApiHandle{
 		config:      config,
 		engine:      app,
 		responseSvc: responseSvc,
 	}
+
+	if config.EnableTrace {
+		// 开启链路追踪
+		apiHandle.Middleware(&trace.HttpTraceMiddleware{})
+	}
+
+	return apiHandle
 }

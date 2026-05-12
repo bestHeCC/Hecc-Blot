@@ -34,7 +34,7 @@ func (s *SlsSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 }
 
 func (s *SlsSvc) send(ctx context.Context, level string, msg string, fields ...interface{}) {
-	traceId := getTraceId(ctx)
+	traceId := getTraceId(extractContext(ctx))
 	contents := []*sls.LogContent{
 		newLogContent("level", level),
 		newLogContent("message", msg),
