@@ -139,6 +139,7 @@ func main() {
 - [组件替换说明](docs/component_replacement.md) - 如何替换框架组件
 - [IOC 自动注入说明](docs/ioc_injection.md) - IOC 容器工作原理
 - [路由和中间件说明](docs/routes_middleware.md) - 路由注册和参数校验机制
+- [链路追踪说明](docs/trace.md) - OpenTelemetry + Jaeger 集成使用
 
 ## 核心组件
 
@@ -149,13 +150,16 @@ func main() {
 处理路由注册、参数校验、响应包装
 
 ### 3. 日志服务
-支持本地日志和阿里云 SLS
+支持本地日志和阿里云 SLS，可自动关联 TraceId
 
 ### 4. 数据库服务
 基于 GORM 的 MySQL 实现
 
 ### 5. 缓存服务
 支持本地缓存和 Redis
+
+### 6. 链路追踪服务
+基于 OpenTelemetry 的分布式追踪，支持对接 Jaeger，详见 [链路追踪说明](docs/trace.md)
 
 ## 设计原则
 
