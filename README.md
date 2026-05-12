@@ -14,7 +14,7 @@ Hecc-Go-Core 是一个基于 Go 语言的轻量级后端框架，采用面向接
 ## 目录结构
 
 ```
-├── contract/          # 接口契约定义
+├── contract/         # 接口契约定义
 │   ├── api/          # API 相关接口
 │   ├── cache/        # 缓存相关接口
 │   ├── db/           # 数据库相关接口
@@ -159,7 +159,7 @@ func main() {
 支持本地缓存和 Redis
 
 ### 6. 链路追踪服务
-基于 OpenTelemetry 的分布式追踪，支持对接 Jaeger，详见 [链路追踪说明](docs/trace.md)
+基于 OpenTelemetry 的分布式追踪，默认支持 Jaeger
 
 ## 设计原则
 
