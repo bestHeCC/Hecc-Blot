@@ -4,7 +4,34 @@
 
 Hecc-Go-Core 框架基于 Gin 框架实现了路由和中间件的自动化注册机制，并提供参数自动校验和返回值自动包装功能。
 
----
+**请求处理流程**:
+
+```mermaid
+sequenceDiagram
+    participant Client as 客户端
+    participant MW as 中间件链
+    participant API as API 处理器
+    participant Resp as 响应服务
+    
+    Client->>MW: HTTP 请求
+    MW->>MW: ReplayMiddleware<br/>TokenMiddleware
+    MW->>API: 参数绑定 + 校验
+    alt 校验失败
+        API->>Resp: 返回校验错误
+        Resp->>Client: 400 错误响应
+    else 校验成功
+        API->>API: Call() 业务逻辑
+        alt 业务成功
+            API->>Resp: 返回数据
+            Resp->>Client: 200 成功响应
+        else 业务失败
+            API->>Resp: 返回业务错误
+            Resp->>Client: 500 错误响应
+        end
+    end
+```
+
+***
 
 ## 路由注册机制
 
@@ -44,7 +71,7 @@ func register(apiHandle iCoreApi.IApiHandle) {
 }
 ```
 
----
+***
 
 ## 中间件注册
 
@@ -110,7 +137,7 @@ apiHandle.Middleware(
 
 **执行顺序**: 按照注册顺序依次执行
 
----
+***
 
 ## API 定义规范
 
@@ -154,7 +181,7 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 }
 ```
 
----
+***
 
 ## 参数自动校验
 
@@ -243,7 +270,7 @@ func GetErrorMsg(request interface{}, err error) string {
 }
 ```
 
----
+***
 
 ## 返回值自动包装
 
@@ -311,7 +338,7 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 }
 ```
 
----
+***
 
 ## 完整示例
 
@@ -365,7 +392,7 @@ func register(apiHandle iCoreApi.IApiHandle) {
 }
 ```
 
----
+***
 
 ## 配置说明
 
@@ -379,13 +406,13 @@ server:
 
 ### 环境模式映射
 
-| 环境 | Gin 模式 | 说明 |
-|-----|---------|------|
-| dev | DebugMode | 开发模式，输出详细日志 |
-| test | TestMode | 测试模式 |
-| product | ReleaseMode | 生产模式，优化性能 |
+| 环境      | Gin 模式      | 说明          |
+| ------- | ----------- | ----------- |
+| dev     | DebugMode   | 开发模式，输出详细日志 |
+| test    | TestMode    | 测试模式        |
+| product | ReleaseMode | 生产模式，优化性能   |
 
----
+***
 
 ## 工作流程图
 
@@ -412,7 +439,7 @@ server:
 └────────────────────────────────────────────────────────────────┘
 ```
 
----
+***
 
 ## 总结
 
@@ -425,7 +452,9 @@ server:
 5. **链式调用**: 支持中间件链式注册
 
 核心优势：
+
 - **减少样板代码**: 无需手动绑定参数和包装返回值
 - **统一规范**: 所有 API 遵循统一的请求和响应格式
 - **易于扩展**: 新增 API 只需定义结构体和实现 Call 方法
 - **类型安全**: 编译时检查接口实现
+

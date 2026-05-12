@@ -4,7 +4,34 @@
 
 IOC（控制反转）是 Hecc-Go-Core 框架的核心组件，负责管理所有服务的生命周期和依赖注入。通过 IOC 容器，框架可以自动将依赖注入到需要的地方，无需手动创建和传递依赖。
 
----
+**IOC 工作流程**:
+
+```mermaid
+graph TD
+    subgraph "注册阶段"
+        A1["创建实例<br/>logSvc, dbFactory"] --> A2["Set()<br/>存入 IOC 容器"]
+    end
+    
+    subgraph "注入阶段"
+        B1["API 结构体<br/>AddApi"] --> B2["Inject()<br/>遍历字段"]
+        B2 --> B3["查找 inject tag"]
+        B3 --> B4["从容器获取实例"]
+        B4 --> B5["设置字段值"]
+    end
+    
+    subgraph "使用阶段"
+        C1["a.LogSvc.Info()"] --> C2["自动注入完成<br/>可直接使用"]
+    end
+    
+    A2 --> B4
+    B5 --> C2
+    
+    style A2 fill:#bbdefb,color:#0d47a1
+    style B4 fill:#fff3e0,color:#e65100
+    style C2 fill:#c8e6c9,color:#1a5e20
+```
+
+***
 
 ## IOC 核心实现
 
@@ -29,6 +56,7 @@ func Set(interfaceObj interface{}, instance interface{}) {
 ```
 
 **参数说明**:
+
 - `interfaceObj`: 接口类型（通常使用 `new(InterfaceType)` 获取）
 - `instance`: 实现该接口的具体实例
 
@@ -58,7 +86,7 @@ ioc.SetWithName(new(iCoreLog.ILog), "local", localLog)
 ioc.SetWithName(new(iCoreLog.ILog), "remote", remoteLog)
 ```
 
----
+***
 
 ## 自动注入原理
 
@@ -124,7 +152,7 @@ func inject(instanceValue reflect.Value) {
 }
 ```
 
----
+***
 
 ## 使用方式
 
@@ -173,7 +201,7 @@ type CustomApi struct {
 }
 ```
 
----
+***
 
 ## 替换框架组件并保持自动注入
 
@@ -240,7 +268,7 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 }
 ```
 
----
+***
 
 ## 注入规则
 
@@ -289,7 +317,7 @@ type MyApi struct {
 }
 ```
 
----
+***
 
 ## 单测示例
 
@@ -317,7 +345,7 @@ func TestIocSvc(t *testing.T) {
 }
 ```
 
----
+***
 
 ## IOC 工作流程图
 
@@ -350,7 +378,7 @@ func TestIocSvc(t *testing.T) {
 └─────────────────────────────────────────────────────────────┘
 ```
 
----
+***
 
 ## 总结
 
@@ -362,6 +390,8 @@ IOC 组件实现了：
 4. **生命周期管理**: 统一管理所有服务的生命周期
 
 核心优势：
+
 - **降低耦合**: 模块之间通过接口交互，不依赖具体实现
 - **提高可测试性**: 可以方便地注入 Mock 实现进行测试
 - **增强扩展性**: 新增功能只需实现接口并注册到容器
+
