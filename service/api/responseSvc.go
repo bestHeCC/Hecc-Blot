@@ -11,9 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ResponseSvc struct{}
-
-type responseBody struct {
+type ResponseSvc struct {
 	Code    response.Value `json:"code"`
 	Message string         `json:"message"`
 	Data    interface{}    `json:"data"`
@@ -27,11 +25,11 @@ func (r ResponseSvc) Regular(ctx context.Context, data interface{}, err coreErro
 		data = err.GetData()
 	}
 
-	g.JSON(http.StatusOK, responseBody{
-		Code:    code,
-		Message: response.CodeMap[code],
-		Data:    data,
-	})
+	r.Code = code
+	r.Message = response.CodeMap[code]
+	r.Data = data
+
+	g.JSON(http.StatusOK, r)
 }
 
 func NewResponseSvc() api.IResponse {
