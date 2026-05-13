@@ -3,9 +3,10 @@ package db
 import (
 	"context"
 
-	dbType "core/enum/db"
+	dbEnum "core/enum/db"
 )
 
 type IDbFactory interface {
-	Build(ctx context.Context, value ...dbType.Value) IDb
+	Build(ctx context.Context, value ...dbEnum.Value) IDb
+	SetDefault(dbEnum.Value)
 }

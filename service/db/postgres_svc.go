@@ -7,39 +7,39 @@ import (
 	"core/contract/log"
 	dbConf "core/entity/config/db"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type MysqlSvc struct {
+type PostgresSvc struct {
 	BaseDbSvc
 }
 
-func newMysqlSvc(config *dbConf.MysqlConfig, logger log.ILog) (db.IDb, func(), error) {
+func newPostgresSvc(config *dbConf.PostgresConfig, logger log.ILog) (db.IDb, func(), error) {
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&timeout=%ds",
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable connect_timeout=%d",
+		config.Ip,
 		config.Username,
 		config.Password,
-		config.Ip,
-		config.Port,
 		config.DbName,
+		config.Port,
 		config.ConnectTimeout,
 	)
 
-	mysqlDb, err := gorm.Open(mysql.Open(dsn), initGormConfig(logger, config.SlowThreshold))
+	postgresDb, err := gorm.Open(postgres.Open(dsn), initGormConfig(logger, config.SlowThreshold))
 	if err != nil {
 		return nil, func() {}, err
 	}
 
-	sqlDb, err := mysqlDb.DB()
+	sqlDb, err := postgresDb.DB()
 	if err != nil {
 		return nil, func() {}, err
 	}
 
 	setSqlDbPool(sqlDb, config.MaxIdleConn, config.MaxOpenConn, config.ConnMaxLifetime)
 
-	return &MysqlSvc{
-			BaseDbSvc{db: mysqlDb},
+	return &PostgresSvc{
+			BaseDbSvc{db: postgresDb},
 		}, func() {
 			sqlDb.Close()
 		}, nil
