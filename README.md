@@ -72,6 +72,16 @@ db:
     max_open_conn: 100
     conn_max_lifetime: 3600
     slow_threshold: 100
+  postgres:
+    username: root
+    password: password
+    ip: localhost
+    port: 5432
+    db_name: test
+    max_idle_conn: 10
+    max_open_conn: 100
+    conn_max_lifetime: 3600
+    slow_threshold: 100
 
 cache:
   local:
@@ -153,7 +163,16 @@ func main() {
 支持本地日志和阿里云 SLS，可自动关联 TraceId
 
 ### 4. 数据库服务
-基于 GORM 的 MySQL 实现
+支持 MySQL 和 PostgreSQL，基于 GORM 实现。框架通过工厂模式支持同时配置多个数据库类型，并可动态切换默认数据库。
+
+```go
+// 设置默认数据库为 PostgreSQL
+dbFactory.SetDefault(dbEnum.Postgres)
+
+// 或者在运行时指定数据库类型
+dbFactory.Build(ctx, dbEnum.Mysql)  // 使用 MySQL
+dbFactory.Build(ctx, dbEnum.Postgres)  // 使用 PostgreSQL
+```
 
 ### 5. 缓存服务
 支持本地缓存和 Redis

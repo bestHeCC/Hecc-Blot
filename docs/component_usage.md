@@ -54,7 +54,7 @@ log:
 
 ### 单测参考
 
-查看 `service/log/logSvc_test.go` 和 `service/log/slsSvc_test.go` 了解测试方式。
+查看 `service/log/*_test.go` 单测文件了解测试方式。
 
 ---
 
@@ -134,6 +134,8 @@ func (b AccountModel) GetID() int {
 
 ### 配置说明
 
+数据库组件支持 MySQL 和 PostgreSQL 两种数据库：
+
 ```yaml
 db:
   mysql:
@@ -146,11 +148,44 @@ db:
     max_open_conn: 100
     conn_max_lifetime: 3600
     slow_threshold: 100
+  postgres:
+    username: root
+    password: password
+    ip: localhost
+    port: 5432
+    db_name: test
+    max_idle_conn: 10
+    max_open_conn: 100
+    conn_max_lifetime: 3600
+    slow_threshold: 100
+```
+
+**多数据库切换**：
+
+```go
+// 创建数据库工厂（同时支持 MySQL 和 PostgreSQL）
+dbFactory, clearUp, err := db.NewDbFactory(&config.Db, logSvc)
+
+// 设置默认数据库类型
+dbFactory.SetDefault(dbEnum.Postgres)  // 默认使用 PostgreSQL
+
+// 在 API 中指定数据库类型
+func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+    // 使用 PostgreSQL
+    db := a.DbFactory.Build(ctx, dbEnum.Postgres)
+    err := db.Add(&newAccount)
+
+    // 或者使用 MySQL
+    db := a.DbFactory.Build(ctx, dbEnum.Mysql)
+    err := db.Add(&newAccount)
+
+    return newAccount, nil
+}
 ```
 
 ### 单测参考
 
-查看 `service/db/mysqlSvc_test.go` 了解测试方式。
+查看 `service/db/*_test.go` 单测文件了解测试方式。
 
 ---
 
@@ -213,7 +248,7 @@ cache:
 
 ### 单测参考
 
-查看 `service/cache/localCacheSvc_test.go` 和 `service/cache/redisCacheSvc_test.go` 了解测试方式。
+查看 `service/cache/*_test.go` 单测文件了解测试方式。
 
 ---
 
