@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -36,9 +37,10 @@ var mockLocalData = []struct {
 func TestLocalCacheSvc(t *testing.T) {
 	mockCache := newLocalCacheSvc(&mockConf)
 
+	ctx := context.Background()
 	t.Run("set", func(t *testing.T) {
 		for _, k := range mockLocalData {
-			err := mockCache.Set(k.key, k.val, k.expire)
+			err := mockCache.Set(ctx, k.key, k.val, k.expire)
 			if err != nil {
 				fail++
 			}
@@ -49,9 +51,9 @@ func TestLocalCacheSvc(t *testing.T) {
 
 	t.Run("get", func(t *testing.T) {
 		for _, k := range mockLocalData {
-			_ = mockCache.Set(k.key, k.val, k.expire)
+			_ = mockCache.Set(ctx, k.key, k.val, k.expire)
 
-			val, err := mockCache.Get(k.key)
+			val, err := mockCache.Get(ctx, k.key)
 			if err != nil {
 				fail++
 			}
@@ -73,7 +75,7 @@ func TestLocalCacheSvc(t *testing.T) {
 
 	t.Run("exists", func(t *testing.T) {
 		for _, k := range mockLocalData {
-			_ = mockCache.Set(k.key, k.val, k.expire)
+			_ = mockCache.Set(ctx, k.key, k.val, k.expire)
 		}
 
 		// 初始化随机种子
@@ -84,7 +86,7 @@ func TestLocalCacheSvc(t *testing.T) {
 		randData := mockLocalData[randomIndex]
 		t.Log(randData)
 
-		ok, err := mockCache.Exists(randData.key)
+		ok, err := mockCache.Exists(ctx, randData.key)
 
 		assert.Equal(t, nil, err)
 		assert.Equalf(t, true, ok, "数据不存在")
@@ -92,7 +94,7 @@ func TestLocalCacheSvc(t *testing.T) {
 
 	t.Run("del", func(t *testing.T) {
 		for _, k := range mockLocalData {
-			_ = mockCache.Set(k.key, k.val, k.expire)
+			_ = mockCache.Set(ctx, k.key, k.val, k.expire)
 		}
 
 		// 初始化随机种子
@@ -103,19 +105,19 @@ func TestLocalCacheSvc(t *testing.T) {
 		randData := mockLocalData[randomIndex]
 		t.Log(randData)
 
-		err := mockCache.Del(randData.key)
+		err := mockCache.Del(ctx, randData.key)
 		assert.Equal(t, nil, err)
 
-		v, err := mockCache.Get(randData.key)
+		v, err := mockCache.Get(ctx, randData.key)
 		assert.Equal(t, nil, err)
 		assert.Equalf(t, nil, v, "数据未删除")
 	})
 
 	t.Run("clear", func(t *testing.T) {
 		for _, k := range mockLocalData {
-			_ = mockCache.Set(k.key, k.val, k.expire)
+			_ = mockCache.Set(ctx, k.key, k.val, k.expire)
 
-			val, _ := mockCache.Get(k.key)
+			val, _ := mockCache.Get(ctx, k.key)
 			t.Log(k.key, val)
 		}
 
@@ -124,7 +126,7 @@ func TestLocalCacheSvc(t *testing.T) {
 		t.Log("============ sleep 16s end ============")
 
 		for _, k := range mockLocalData {
-			val, _ := mockCache.Get(k.key)
+			val, _ := mockCache.Get(ctx, k.key)
 			if val != nil {
 				fail++
 			}

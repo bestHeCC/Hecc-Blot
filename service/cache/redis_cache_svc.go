@@ -15,21 +15,19 @@ type redisCacheSvc struct {
 	client *redis.Client
 }
 
-var ctx = context.Background()
-
-func (r *redisCacheSvc) Set(key string, val interface{}, expire time.Duration) error {
+func (r *redisCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
 	return r.client.Set(ctx, key, val, expire).Err()
 }
 
-func (r *redisCacheSvc) Get(key string) (interface{}, error) {
+func (r *redisCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *redisCacheSvc) Del(key string) error {
+func (r *redisCacheSvc) Del(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }
 
-func (r *redisCacheSvc) Exists(key string) (bool, error) {
+func (r *redisCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
 	n, err := r.client.Exists(ctx, key).Result()
 	if err != nil {
 		return false, err
@@ -42,15 +40,15 @@ func (r *redisCacheSvc) Exists(key string) (bool, error) {
 	return true, nil
 }
 
-func (r *redisCacheSvc) HSet(key string, values ...interface{}) error {
+func (r *redisCacheSvc) HSet(ctx context.Context, key string, values ...interface{}) error {
 	return r.client.HSet(ctx, key, values...).Err()
 }
 
-func (r *redisCacheSvc) HGet(key, field string) (string, error) {
+func (r *redisCacheSvc) HGet(ctx context.Context, key, field string) (string, error) {
 	return r.client.HGet(ctx, key, field).Result()
 }
 
-func (r *redisCacheSvc) HDel(key string, fields ...string) error {
+func (r *redisCacheSvc) HDel(ctx context.Context, key string, fields ...string) error {
 	return r.client.HDel(ctx, key, fields...).Err()
 }
 

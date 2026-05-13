@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"testing"
 
 	"core/entity/config/cache"
@@ -20,20 +21,21 @@ func TestRedisSvc(t *testing.T) {
 	redisSvc := newRedisCacheSvc(&mockRedisConf)
 	defer redisSvc.Close()
 
+	ctx := context.Background()
 	t.Run("set", func(t *testing.T) {
 		key := "hcc-set"
 
-		err := redisSvc.Set(key, "1", 0)
+		err := redisSvc.Set(ctx, key, "1", 0)
 		assert.Equal(t, nil, err)
 	})
 
 	t.Run("get", func(t *testing.T) {
 		key := "hcc-get"
 		val := "1"
-		err := redisSvc.Set(key, val, 0)
+		err := redisSvc.Set(ctx, key, val, 0)
 		assert.Equal(t, nil, err)
 
-		v, err := redisSvc.Get(key)
+		v, err := redisSvc.Get(ctx, key)
 		assert.Equal(t, nil, err)
 		assert.Equalf(t, val, v, "取值不一致")
 	})
@@ -41,23 +43,23 @@ func TestRedisSvc(t *testing.T) {
 	t.Run("del", func(t *testing.T) {
 		key := "hcc-del"
 		val := "1"
-		err := redisSvc.Set(key, val, 0)
+		err := redisSvc.Set(ctx, key, val, 0)
 		assert.Equal(t, nil, err)
 
-		err = redisSvc.Del(key)
+		err = redisSvc.Del(ctx, key)
 		assert.Equal(t, nil, err)
 
-		_, err = redisSvc.Get(key)
+		_, err = redisSvc.Get(ctx, key)
 		assert.Equal(t, redis.Nil, err)
 	})
 
 	t.Run("exists", func(t *testing.T) {
 		key := "hcc-exists"
 		val := "1"
-		err := redisSvc.Set(key, val, 0)
+		err := redisSvc.Set(ctx, key, val, 0)
 		assert.Equal(t, nil, err)
 
-		exists, err := redisSvc.Exists(key)
+		exists, err := redisSvc.Exists(ctx, key)
 		assert.Equal(t, nil, err)
 		assert.Equalf(t, true, exists, "key不存在")
 	})
@@ -66,7 +68,7 @@ func TestRedisSvc(t *testing.T) {
 		key := "hcc-hset"
 		field := "1"
 		val := "1"
-		err := redisSvc.HSet(key, field, val)
+		err := redisSvc.HSet(ctx, key, field, val)
 		assert.Equal(t, nil, err)
 	})
 
@@ -74,10 +76,10 @@ func TestRedisSvc(t *testing.T) {
 		key := "hcc-hget"
 		field := "1"
 		val := "1"
-		err := redisSvc.HSet(key, field, val)
+		err := redisSvc.HSet(ctx, key, field, val)
 		assert.Equal(t, nil, err)
 
-		v, err := redisSvc.HGet(key, field)
+		v, err := redisSvc.HGet(ctx, key, field)
 		assert.Equal(t, nil, err)
 		assert.Equalf(t, val, v, "值不一致")
 	})
@@ -86,10 +88,10 @@ func TestRedisSvc(t *testing.T) {
 		key := "hcc-hget"
 		field := "1"
 		val := "1"
-		err := redisSvc.HSet(key, field, val)
+		err := redisSvc.HSet(ctx, key, field, val)
 		assert.Equal(t, nil, err)
 
-		err = redisSvc.HDel(key, field)
+		err = redisSvc.HDel(ctx, key, field)
 		assert.Equal(t, nil, err)
 	})
 }

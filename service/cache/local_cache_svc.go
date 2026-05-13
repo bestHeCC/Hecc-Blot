@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -27,7 +28,7 @@ type memCacheVal struct {
 }
 
 // Set 将value写入缓存
-func (c *localCacheSvc) Set(key string, val interface{}, expire time.Duration) error {
+func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
 	// 上锁，保证线程安全
 	c.locker.Lock()
 	defer c.locker.Unlock()
@@ -43,7 +44,7 @@ func (c *localCacheSvc) Set(key string, val interface{}, expire time.Duration) e
 }
 
 // Get 根据key值获取value
-func (c *localCacheSvc) Get(key string) (interface{}, error) {
+func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
 	c.locker.RLock()
 	defer c.locker.RUnlock()
 
@@ -61,7 +62,7 @@ func (c *localCacheSvc) Get(key string) (interface{}, error) {
 }
 
 // Del 删除key值
-func (c *localCacheSvc) Del(key string) error {
+func (c *localCacheSvc) Del(ctx context.Context, key string) error {
 	c.locker.Lock()
 	defer c.locker.Unlock()
 
@@ -71,7 +72,7 @@ func (c *localCacheSvc) Del(key string) error {
 }
 
 // Exists 判断key是否存在
-func (c *localCacheSvc) Exists(key string) (bool, error) {
+func (c *localCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
 	c.locker.RLock()
 	defer c.locker.RUnlock()
 
