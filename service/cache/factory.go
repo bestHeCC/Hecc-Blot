@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"core/contract/cache"
-	cacheConf "core/entity/config/cache"
+	"hecc-blot/contract/cache"
+	cacheConf "hecc-blot/entity/config/cache"
 )
 
 type Factory struct {

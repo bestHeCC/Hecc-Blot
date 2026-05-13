@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"core/contract/log"
-	logConfig "core/entity/config/log"
+	"hecc-blot/contract/log"
+	logConfig "hecc-blot/entity/config/log"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

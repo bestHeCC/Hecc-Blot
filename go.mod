@@ -1,4 +1,4 @@
-module core
+module hecc-blot
 
 go 1.26.1
 

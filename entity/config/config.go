@@ -1,11 +1,11 @@
 package config
 
 import (
-	"core/entity/config/cache"
-	"core/entity/config/db"
-	"core/entity/config/log"
-	"core/entity/config/server"
-	"core/entity/config/trace"
+	"hecc-blot/entity/config/cache"
+	"hecc-blot/entity/config/db"
+	"hecc-blot/entity/config/log"
+	"hecc-blot/entity/config/server"
+	"hecc-blot/entity/config/trace"
 )
 
 type Config struct {

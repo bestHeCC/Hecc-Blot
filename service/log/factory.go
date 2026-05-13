@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	ilog "core/contract/log"
-	"core/entity/config/log"
-	"core/enum/trace"
+	iLog "hecc-blot/contract/log"
+	"hecc-blot/entity/config/log"
+	"hecc-blot/enum/trace"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +28,7 @@ func extractContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func NewLogger(config *log.Config) (ilog.ILog, error) {
+func NewLogger(config *log.Config) (iLog.ILog, error) {
 	// 优先使用sls日志服务
 	slsConfig := config.Sls
 	if slsConfig.Enable {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"core/entity/config/db"
-	logConf "core/entity/config/log"
-	dbEnum "core/enum/db"
-	"core/service/log"
+	"hecc-blot/entity/config/db"
+	logConf "hecc-blot/entity/config/log"
+	dbEnum "hecc-blot/enum/db"
+	"hecc-blot/service/log"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/plugin/soft_delete"

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"core/contract/cache"
-	cacheConf "core/entity/config/cache"
+	"hecc-blot/contract/cache"
+	cacheConf "hecc-blot/entity/config/cache"
 
 	"github.com/redis/go-redis/v9"
 )

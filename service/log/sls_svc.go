@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	ilog "core/contract/log"
-	"core/entity/config/log"
+	ilog "hecc-blot/contract/log"
+	"hecc-blot/entity/config/log"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 )

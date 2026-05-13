@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	dbEnum "core/enum/db"
+	dbEnum "hecc-blot/enum/db"
 )
 
 type IDbFactory interface {

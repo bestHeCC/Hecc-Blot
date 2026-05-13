@@ -3,13 +3,13 @@ package db
 import (
 	"context"
 
-	"core/contract/log"
-	dbConf "core/entity/config/db"
+	"hecc-blot/contract/log"
+	dbConf "hecc-blot/entity/config/db"
 
 	"fmt"
 
-	"core/contract/db"
-	dbEnum "core/enum/db"
+	"hecc-blot/contract/db"
+	dbEnum "hecc-blot/enum/db"
 )
 
 type Factory struct {

@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"core/contract/api"
-	"core/entity/config/server"
-	envEnum "core/enum/env"
-	"core/enum/response"
-	coreError "core/service/error"
-	"core/service/ioc"
-	"core/service/trace"
+	"hecc-blot/contract/api"
+	"hecc-blot/entity/config/server"
+	envEnum "hecc-blot/enum/env"
+	"hecc-blot/enum/response"
+	coreError "hecc-blot/service/error"
+	"hecc-blot/service/ioc"
+	"hecc-blot/service/trace"
 
 	"github.com/gin-gonic/gin"
 )

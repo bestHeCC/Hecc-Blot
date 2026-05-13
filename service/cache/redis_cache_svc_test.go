@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"core/entity/config/cache"
+	"hecc-blot/entity/config/cache"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"

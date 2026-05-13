@@ -1,7 +1,7 @@
 package server
 
 import (
-	envType "core/enum/env"
+	envType "hecc-blot/enum/env"
 )
 
 type Config struct {

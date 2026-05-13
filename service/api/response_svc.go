@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"core/contract/api"
-	coreError "core/contract/error"
-	"core/enum/response"
+	"hecc-blot/contract/api"
+	coreError "hecc-blot/contract/error"
+	"hecc-blot/enum/response"
 
 	"github.com/gin-gonic/gin"
 )

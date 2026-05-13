@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"time"
 
-	"core/contract/db"
-	"core/contract/log"
+	"hecc-blot/contract/db"
+	"hecc-blot/contract/log"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

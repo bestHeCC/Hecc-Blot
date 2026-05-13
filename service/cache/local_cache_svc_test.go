@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"core/entity/config/cache"
+	"hecc-blot/entity/config/cache"
 
 	"github.com/stretchr/testify/assert"
 )

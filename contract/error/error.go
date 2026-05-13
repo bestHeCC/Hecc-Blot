@@ -1,6 +1,6 @@
 package error
 
-import "core/enum/response"
+import "hecc-blot/enum/response"
 
 type IError interface {
 	error

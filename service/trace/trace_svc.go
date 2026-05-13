@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"core/contract/trace"
-	traceConf "core/entity/config/trace"
+	"hecc-blot/contract/trace"
+	traceConf "hecc-blot/entity/config/trace"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

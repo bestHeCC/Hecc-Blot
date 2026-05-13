@@ -1,7 +1,7 @@
 package api
 
 import (
-	apiEntity "core/entity/api"
+	apiEntity "hecc-blot/entity/api"
 )
 
 type IValidator interface {

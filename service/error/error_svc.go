@@ -3,8 +3,8 @@ package error
 import (
 	"fmt"
 
-	coreError "core/contract/error"
-	"core/enum/response"
+	coreError "hecc-blot/contract/error"
+	"hecc-blot/enum/response"
 )
 
 type errorSvc struct {

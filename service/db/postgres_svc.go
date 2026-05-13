@@ -3,9 +3,9 @@ package db
 import (
 	"fmt"
 
-	"core/contract/db"
-	"core/contract/log"
-	dbConf "core/entity/config/db"
+	"hecc-blot/contract/db"
+	"hecc-blot/contract/log"
+	dbConf "hecc-blot/entity/config/db"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

@@ -3,7 +3,7 @@ package db
 import (
 	"testing"
 
-	"core/service/log"
+	"hecc-blot/service/log"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -3,8 +3,8 @@ package trace
 import (
 	"context"
 
-	iCoreTrace "core/contract/trace"
-	"core/enum/trace"
+	iCoreTrace "hecc-blot/contract/trace"
+	"hecc-blot/enum/trace"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/propagation"

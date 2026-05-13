@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"core/entity/config/log"
-	"core/enum/trace"
+	"hecc-blot/entity/config/log"
+	"hecc-blot/enum/trace"
 
 	"github.com/stretchr/testify/assert"
 )
