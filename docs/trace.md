@@ -8,7 +8,7 @@
 
 ```yaml
 trace:
-  service_name: hecc-go-core            # 服务名称
+  service_name: Hecc-Blot            # 服务名称
   endpoint: 127.0.0.1:4318              # OTLP 接收端点 (HTTP)
   sampler:
     type: always                        # 采样类型: always/never/probability
