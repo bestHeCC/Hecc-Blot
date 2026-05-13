@@ -1,5 +1,9 @@
 # Hecc-Blot
 
+[![Go Version](https://img.shields.io/badge/Go-1.26.1-blue)](https://github.com/hecc/hecc-blot)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Gitee Repo](https://img.shields.io/badge/Gitee-hecc--blot-red)](https://gitee.com/bestHeCC/hecc-blot)
+
 Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口的设计理念，提供依赖注入、路由注册、参数校验、统一响应等核心功能。
 
 ## 框架特性
@@ -186,6 +190,28 @@ dbFactory.Build(ctx, dbEnum.Postgres)  // 使用 PostgreSQL
 2. **接口隔离**: 每个接口只定义单一职责
 3. **开闭原则**: 对扩展开放，对修改关闭
 4. **单一职责**: 每个组件只负责一个功能
+
+## 感谢
+
+如果你觉得 Hecc-Blot 对你有帮助，欢迎给我们一个 ⭐️
+
+### 反馈与贡献
+
+- **Bug反馈 和 功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/hecc-blot/issues)
+- **代码贡献**: 欢迎提交 Pull Request，我们会尽快 Review
+
+### 致谢
+
+本框架在开发过程中参考了以下优秀项目：
+
+- [Gin](https://github.com/gin-gonic/gin) - 高性能 Go Web 框架
+- [GORM](https://github.com/go-gorm/gorm) - 友好的 Go ORM 库
+- [Zap](https://github.com/uber-go/zap) - 高性能日志库
+- [OpenTelemetry](https://opentelemetry.io/) - 分布式追踪标准
+
+### 联系作者
+
+- Gitee: [hecc/hecc-blot](https://gitee.com/bestHeCC/hecc-blot)
 
 ## 许可证
 
