@@ -217,8 +217,8 @@ type IRedisCache interface {
 ### 使用方法
 
 ```go
-// 创建缓存工厂
-cacheFactory := cache.NewCacheFactory(&config.Cache)
+// 创建缓存工厂（可选传入 traceSvc 以支持链路追踪）
+cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
 
 // 注册到IOC容器
 ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
@@ -239,12 +239,22 @@ cache:
   local:
     enable: true
     default_expire: 3600
+    enable_trace: true                    # 是否开启链路追踪
   redis:
     enable: true
     addr: localhost:6379
     password: ""
     db: 0
 ```
+
+### 链路追踪支持
+
+缓存服务支持链路追踪，当传入 `traceSvc` 后，会自动记录以下操作：
+
+- **本地缓存**：记录 Set/Get/Delete 操作的链路
+- **Redis 缓存**：记录 Set/Get/Delete/Exists/HSet/HGet/HDel 操作的链路
+
+开启追踪后，可在追踪系统中查看缓存操作的耗时和调用关系。
 
 ### 单测参考
 

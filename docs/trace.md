@@ -13,9 +13,6 @@ trace:
   sampler:
     type: always                        # 采样类型: always/never/probability
     ratio: 0.5                          # 采样比例 (probability 模式使用)
-  trace:
-    mysql_enable: true                  # 是否开启 MySQL 追踪
-    redis_enable: true                  # 是否开启 Redis 追踪
 ```
 
 ### 配置项说明
@@ -26,8 +23,6 @@ trace:
 | `endpoint` | string | OTLP HTTP 接收端点地址 |
 | `sampler.type` | string | 采样类型：`always`/`never`/`probability` |
 | `sampler.ratio` | float | 采样比例，仅 probability 模式生效 (0-1) |
-| `trace.mysql_enable` | bool | 是否开启 MySQL 操作的自动追踪 |
-| `trace.redis_enable` | bool | 是否开启 Redis 操作的自动追踪 |
 
 ### 采样类型
 
@@ -53,9 +48,6 @@ traceSvc, traceClearUp, err := trace.NewTraceSvc(&config.Trace)
 if err != nil {
     allErrors = append(allErrors, err)
 }
-
-// 注册到 IOC 容器
-ioc.Set(new(iCoreTrace.ITrace), traceSvc)
 
 defer traceClearUp()
 ```
@@ -110,15 +102,27 @@ func (y YourApi) Call(ctx *gin.Context) (interface{}, error) {
 
 ### HttpTraceMiddleware
 
-框架提供默认 `HttpTraceMiddleware`，自动追踪所有 HTTP 请求  
-`server.Config`中的`EnableTrace`设置为true，即可开启
+框架提供默认 `HttpTraceMiddleware`，自动追踪所有 HTTP 请求。创建 API 服务时传入 `traceSvc` 即可开启链路追踪。
+
+### 使用方式
+
+```go
+// 创建 API 服务时显式传入 traceSvc
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+
+// 注册路由
+register(apiHandle)
+
+// 启动服务
+apiHandle.Listen()
+```
 
 ### 自动行为
 
 `HttpTraceMiddleware` 会自动执行以下操作：
 
 1. **链路上下文提取**：从请求头 `traceparent` 中提取分布式追踪上下文，实现跨服务链路关联
-2. **创建请求 Span**：为每个 HTTP 请求创建 `http.request` Span
+2. **创建请求 Span**：为每个 HTTP 请求创建 `http.request-{path}` Span（包含请求路径）
 3. **提取 Trace ID**：从 Span 中获取 Trace ID
 4. **响应头注入**：
    - `X-Trace-Id`: 当前请求的 Trace ID
