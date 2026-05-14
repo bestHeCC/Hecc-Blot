@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -51,6 +52,7 @@ func (s *spanWrapper) SetAttribute(key string, value interface{}) {
 
 func (s *spanWrapper) RecordError(err error) {
 	s.span.RecordError(err)
+	s.span.SetStatus(codes.Error, err.Error())
 }
 
 func (s *spanWrapper) Name() string {
