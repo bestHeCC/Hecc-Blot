@@ -2,6 +2,7 @@ package trace
 
 import (
 	"context"
+	"fmt"
 
 	iCoreTrace "hecc-blot/contract/trace"
 	"hecc-blot/enum/trace"
@@ -12,7 +13,7 @@ import (
 )
 
 type HttpTraceMiddleware struct {
-	TraceSvc iCoreTrace.ITrace `inject:""`
+	TraceSvc iCoreTrace.ITrace
 }
 
 func (h *HttpTraceMiddleware) Middleware() interface{} {
@@ -24,7 +25,7 @@ func (h *HttpTraceMiddleware) Middleware() interface{} {
 		}
 
 		ctx, _ := h.TraceSvc.Extract(carrier)
-		ctx, span := h.TraceSvc.Start(ctx, "http.request",
+		ctx, span := h.TraceSvc.Start(ctx, fmt.Sprintf("http.request-%s", c.Request.URL.Path),
 			"http.method", c.Request.Method,
 			"http.url", c.Request.URL.Path,
 			"net.peer.ip", c.ClientIP())

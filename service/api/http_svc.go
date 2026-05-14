@@ -11,7 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"hecc-blot/contract/api"
+	iCoreApi "hecc-blot/contract/api"
+	iCoreTrace "hecc-blot/contract/trace"
 	"hecc-blot/entity/config/server"
 	envEnum "hecc-blot/enum/env"
 	"hecc-blot/enum/response"
@@ -25,7 +26,7 @@ import (
 type ApiHandle struct {
 	config      *server.Config
 	engine      *gin.Engine
-	responseSvc api.IResponse
+	responseSvc iCoreApi.IResponse
 }
 
 var mapEnv = map[envEnum.Value]string{
@@ -34,7 +35,7 @@ var mapEnv = map[envEnum.Value]string{
 	envEnum.TestMode:    gin.TestMode,
 }
 
-func (f *ApiHandle) Middleware(middlewares ...api.IMiddleware) api.IApiHandle {
+func (f *ApiHandle) Middleware(middlewares ...iCoreApi.IMiddleware) iCoreApi.IApiHandle {
 	for _, iMiddleware := range middlewares {
 		ioc.Inject(iMiddleware)
 
@@ -90,7 +91,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 	// 注入api依赖项
 	ioc.Inject(apiInstance)
 
-	if v, ok := apiInstance.(api.IApi); ok {
+	if v, ok := apiInstance.(iCoreApi.IApi); ok {
 		handler := func(c *gin.Context) {
 			// 自动绑定参数，并进行校验
 			if err := c.ShouldBind(&v); err != nil {
@@ -118,7 +119,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 	}
 }
 
-func NewApiSvc(config *server.Config, responseSvc api.IResponse) api.IApiHandle {
+func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc iCoreTrace.ITrace) iCoreApi.IApiHandle {
 	mode, ok := mapEnv[config.Env]
 	if !ok {
 		panic(fmt.Sprintf("无效环境配置:%s", mode))
@@ -133,9 +134,12 @@ func NewApiSvc(config *server.Config, responseSvc api.IResponse) api.IApiHandle 
 		responseSvc: responseSvc,
 	}
 
-	if config.EnableTrace {
+	if traceSvc != nil {
 		// 开启链路追踪
-		apiHandle.Middleware(&trace.HttpTraceMiddleware{})
+		traceMiddleware := &trace.HttpTraceMiddleware{
+			TraceSvc: traceSvc,
+		}
+		apiHandle.Middleware(traceMiddleware)
 	}
 
 	return apiHandle

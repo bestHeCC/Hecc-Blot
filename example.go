@@ -10,7 +10,6 @@ import (
 	iCoreDb "hecc-blot/contract/db"
 	iCoreError "hecc-blot/contract/error"
 	iCoreLog "hecc-blot/contract/log"
-	iCoreTrace "hecc-blot/contract/trace"
 	entityApi "hecc-blot/entity/api"
 	coreConfig "hecc-blot/entity/config"
 	"hecc-blot/enum/response"
@@ -70,13 +69,12 @@ func main() {
 	}()
 
 	// 注册至ioc容器
-	ioc.Set(new(iCoreTrace.ITrace), traceSvc)
 	ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
 	ioc.Set(new(iCoreLog.ILog), logSvc)
 	ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
 	ioc.Set(new(iCoreApi.IResponse), responseSvc)
 
-	apiHandle := api.NewApiSvc(&config.Server, responseSvc)
+	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
 	register(apiHandle)
 	apiHandle.Listen()
 }
