@@ -48,7 +48,6 @@ func (h *HttpTraceMiddleware) Middleware() interface{} {
 		// 将 traceId 存储到 context.Context 中（不是 gin.Context）
 		ctx = context.WithValue(ctx, trace.TraceIdKey, traceId)
 		c.Request = c.Request.WithContext(ctx)
-		c.Set(trace.TraceIdKey, traceId)
 		c.Next()
 
 		span.SetAttribute("http.status_code", c.Writer.Status())

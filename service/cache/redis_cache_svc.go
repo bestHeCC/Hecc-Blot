@@ -8,6 +8,7 @@ import (
 	"hecc-blot/contract/cache"
 	iCoreTrace "hecc-blot/contract/trace"
 	cacheConf "hecc-blot/entity/config/cache"
+	"hecc-blot/util"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -18,6 +19,8 @@ type redisCacheSvc struct {
 }
 
 func (r *redisCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.SET",
 			"db.system", "redis",
@@ -35,6 +38,8 @@ func (r *redisCacheSvc) Set(ctx context.Context, key string, val interface{}, ex
 }
 
 func (r *redisCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.GET",
 			"db.system", "redis",
@@ -52,6 +57,8 @@ func (r *redisCacheSvc) Get(ctx context.Context, key string) (interface{}, error
 }
 
 func (r *redisCacheSvc) Del(ctx context.Context, key string) error {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.DEL",
 			"db.system", "redis",
@@ -69,6 +76,8 @@ func (r *redisCacheSvc) Del(ctx context.Context, key string) error {
 }
 
 func (r *redisCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.EXISTS",
 			"db.system", "redis",
@@ -97,6 +106,8 @@ func (r *redisCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
 }
 
 func (r *redisCacheSvc) HSet(ctx context.Context, key string, values ...interface{}) error {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.HSET",
 			"db.system", "redis",
@@ -114,6 +125,8 @@ func (r *redisCacheSvc) HSet(ctx context.Context, key string, values ...interfac
 }
 
 func (r *redisCacheSvc) HGet(ctx context.Context, key, field string) (string, error) {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.HGET",
 			"db.system", "redis",
@@ -132,6 +145,8 @@ func (r *redisCacheSvc) HGet(ctx context.Context, key, field string) (string, er
 }
 
 func (r *redisCacheSvc) HDel(ctx context.Context, key string, fields ...string) error {
+	ctx = util.ExtractContext(ctx)
+
 	if r.traceSvc != nil {
 		ctx, span := r.traceSvc.Start(ctx, "redis.HDEL",
 			"db.system", "redis",

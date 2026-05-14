@@ -7,6 +7,7 @@ import (
 
 	ilog "hecc-blot/contract/log"
 	"hecc-blot/entity/config/log"
+	"hecc-blot/util"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 )
@@ -34,7 +35,7 @@ func (s *SlsSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 }
 
 func (s *SlsSvc) send(ctx context.Context, level string, msg string, fields ...interface{}) {
-	traceId := getTraceId(extractContext(ctx))
+	traceId := getTraceId(util.ExtractContext(ctx))
 	contents := []*sls.LogContent{
 		newLogContent("level", level),
 		newLogContent("message", msg),

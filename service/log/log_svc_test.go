@@ -24,7 +24,6 @@ func TestLogSvc(t *testing.T) {
 	assert.NotNil(t, logger)
 
 	ctx := context.Background()
-	ctxWithTraceId := context.WithValue(context.Background(), trace.TraceIdKey, "test-trace-id")
 
 	cases := []struct {
 		level string
@@ -64,7 +63,38 @@ func TestLogSvc(t *testing.T) {
 		}
 	})
 
-	t.Run("log with traceId", func(t *testing.T) {
+}
+
+func TestLogSvcWithTrace(t *testing.T) {
+	logger, err := newLogSvc(localConf)
+	assert.NoError(t, err)
+	assert.NotNil(t, logger)
+
+	ctxWithTraceId := context.WithValue(context.Background(), trace.TraceIdKey, "test-trace-id")
+
+	cases := []struct {
+		level string
+		text  string
+	}{
+		{
+			level: "debug",
+			text:  "test debug",
+		},
+		{
+			level: "info",
+			text:  "test info",
+		},
+		{
+			level: "warn",
+			text:  "test warn",
+		},
+		{
+			level: "error",
+			text:  "test error",
+		},
+	}
+
+	t.Run("log with trace", func(t *testing.T) {
 		for _, c := range cases {
 			t.Run(c.level, func(t *testing.T) {
 				switch c.level {

@@ -7,8 +7,6 @@ import (
 	iLog "hecc-blot/contract/log"
 	"hecc-blot/entity/config/log"
 	"hecc-blot/enum/trace"
-
-	"github.com/gin-gonic/gin"
 )
 
 func getTraceId(ctx context.Context) string {
@@ -18,14 +16,6 @@ func getTraceId(ctx context.Context) string {
 	}
 
 	return ""
-}
-
-// extractContext 从 *gin.Context 中提取 context.Context
-func extractContext(ctx context.Context) context.Context {
-	if ginCtx, ok := ctx.(*gin.Context); ok {
-		return ginCtx.Request.Context()
-	}
-	return ctx
 }
 
 func NewLogger(config *log.Config) (iLog.ILog, error) {

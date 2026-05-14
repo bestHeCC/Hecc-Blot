@@ -8,6 +8,7 @@ import (
 	"hecc-blot/contract/cache"
 	iCoreTrace "hecc-blot/contract/trace"
 	cacheConf "hecc-blot/entity/config/cache"
+	"hecc-blot/util"
 )
 
 type localCacheSvc struct {
@@ -32,6 +33,8 @@ type memCacheVal struct {
 
 // Set 将value写入缓存
 func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
+	ctx = util.ExtractContext(ctx)
+
 	if c.traceSvc != nil {
 		_, span := c.traceSvc.Start(ctx, "localCache.SET",
 			"cache.type", "local",
@@ -48,6 +51,8 @@ func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, ex
 
 // Get 根据key值获取value
 func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
+	ctx = util.ExtractContext(ctx)
+
 	if c.traceSvc != nil {
 		_, span := c.traceSvc.Start(ctx, "localCache.GET",
 			"cache.type", "local",
@@ -71,6 +76,8 @@ func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error
 
 // Del 删除key值
 func (c *localCacheSvc) Del(ctx context.Context, key string) error {
+	ctx = util.ExtractContext(ctx)
+
 	if c.traceSvc != nil {
 		_, span := c.traceSvc.Start(ctx, "localCache.DEL",
 			"cache.type", "local",
@@ -87,6 +94,8 @@ func (c *localCacheSvc) Del(ctx context.Context, key string) error {
 
 // Exists 判断key是否存在
 func (c *localCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
+	ctx = util.ExtractContext(ctx)
+
 	if c.traceSvc != nil {
 		_, span := c.traceSvc.Start(ctx, "localCache.EXISTS",
 			"cache.type", "local",

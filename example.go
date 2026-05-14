@@ -179,8 +179,9 @@ func (a AddRequest) GetMessages() entityApi.Messages {
 type AddApi struct {
 	// 注意结构体内的字段需要保证顺序，注入的服务需要放在最前面，请求参数需要放在最后面
 	// 通过inject tag，注册路由时会自动注入对应服务
-	DbFactory iCoreDb.IDbFactory `inject:""`
-	LogSvc    iCoreLog.ILog      `inject:""`
+	DbFactory    iCoreDb.IDbFactory       `inject:""`
+	LogSvc       iCoreLog.ILog            `inject:""`
+	CacheFactory iCoreCache.ICacheFactory `inject:""`
 
 	// 请求参数，注册路由时会自动绑定并校验
 	AddRequest
@@ -196,6 +197,9 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	if err != nil {
 		return nil, errorSvc.NewError(response.Fail, err)
 	}
+
+	a.CacheFactory.Local().Set(ctx, "data", data, 10)
+	a.CacheFactory.Redis().Set(ctx, "data", data, -1)
 
 	// 此处只需要关注返回值，接口返回格式由iCoreApi.IResponse统一处理
 	return data, nil
