@@ -238,8 +238,7 @@ err := redisCache.Set(ctx, "key", "value", time.Minute)
 cache:
   local:
     enable: true
-    default_expire: 3600
-    enable_trace: true                    # 是否开启链路追踪
+    clear_interval: 3600
   redis:
     enable: true
     addr: localhost:6379

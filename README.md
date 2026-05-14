@@ -23,7 +23,8 @@ Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口
 │   ├── cache/        # 缓存相关接口
 │   ├── db/           # 数据库相关接口
 │   ├── error/        # 错误处理接口
-│   └── log/          # 日志相关接口
+│   ├── log/          # 日志相关接口
+│   └── trace/        # 链路追踪相关接口
 ├── entity/           # 实体定义
 │   ├── api/          # API 实体
 │   └── config/       # 配置实体
@@ -34,8 +35,10 @@ Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口
 │   ├── db/           # 数据库服务
 │   ├── error/        # 错误处理服务
 │   ├── ioc/          # IOC 容器服务
-│   └── log/          # 日志服务
+│   ├── log/          # 日志服务
+│   └── trace/        # 链路追踪服务
 ├── docs/             # 文档目录
+├── util/             # 工具函数
 ├── example.go        # 使用示例
 └── README.md         # 项目说明
 ```
@@ -129,16 +132,18 @@ func main() {
     config, _ := initConf("/config.yaml")
     
     logSvc, _ := log.NewLogger(&config.Log)
+    traceSvc, _ := trace.NewTraceSvc(&config.Trace)
     dbFactory, clearUp, _ := db.NewDbFactory(&config.Db, logSvc)
-    cacheFactory := cache.NewCacheFactory(&config.Cache)
+    cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
     responseSvc := api.NewResponseSvc()
-    
+
     ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
     ioc.Set(new(iCoreLog.ILog), logSvc)
     ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
     ioc.Set(new(iCoreApi.IResponse), responseSvc)
-    
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc)
+    ioc.Set(new(iCoreTrace.ITrace), traceSvc)
+
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
     apiHandle.Middleware(&TokenMiddleware{})
     {
         apiHandle.Post("account/add", &AddApi{})
