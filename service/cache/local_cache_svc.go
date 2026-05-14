@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"hecc-blot/contract/cache"
+	iCoreTrace "hecc-blot/contract/trace"
 	cacheConf "hecc-blot/entity/config/cache"
 )
 
@@ -16,6 +17,8 @@ type localCacheSvc struct {
 	locker sync.RWMutex
 	// clearInterval is 清除缓存的时间间隔
 	clearInterval time.Duration
+	// traceSvc is 追踪服务
+	traceSvc iCoreTrace.ITrace
 }
 
 type memCacheVal struct {
@@ -29,75 +32,118 @@ type memCacheVal struct {
 
 // Set 将value写入缓存
 func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
-	// 上锁，保证线程安全
-	c.locker.Lock()
-	defer c.locker.Unlock()
-
-	c.del(key)
-	c.add(key, &memCacheVal{
-		content:    val,
-		expireTime: time.Now().Add(expire),
-		expire:     expire,
-	})
-
+	if c.traceSvc != nil {
+		_, span := c.traceSvc.Start(ctx, "localCache.SET",
+			"cache.type", "local",
+			"cache.operation", "SET",
+			"cache.key", key,
+		)
+		defer span.End()
+		c.set(key, val, expire)
+		return nil
+	}
+	c.set(key, val, expire)
 	return nil
 }
 
 // Get 根据key值获取value
 func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
-	c.locker.RLock()
-	defer c.locker.RUnlock()
-
-	v, ok := c.get(key)
-	if ok {
-		// 判断是否过期
-		if v.expire != 0 && v.expireTime.Before(time.Now()) {
-			c.del(key)
+	if c.traceSvc != nil {
+		_, span := c.traceSvc.Start(ctx, "localCache.GET",
+			"cache.type", "local",
+			"cache.operation", "GET",
+			"cache.key", key,
+		)
+		defer span.End()
+		result, ok := c.get(key)
+		if !ok {
 			return nil, nil
 		}
-		return v.content, nil
+		return result.content, nil
 	}
 
-	return nil, nil
+	result, ok := c.get(key)
+	if !ok {
+		return nil, nil
+	}
+	return result.content, nil
 }
 
 // Del 删除key值
 func (c *localCacheSvc) Del(ctx context.Context, key string) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-
-	c.del(key)
-
+	if c.traceSvc != nil {
+		_, span := c.traceSvc.Start(ctx, "localCache.DEL",
+			"cache.type", "local",
+			"cache.operation", "DEL",
+			"cache.key", key,
+		)
+		defer span.End()
+		c.delWithLock(key)
+		return nil
+	}
+	c.delWithLock(key)
 	return nil
 }
 
 // Exists 判断key是否存在
 func (c *localCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
-	c.locker.RLock()
-	defer c.locker.RUnlock()
+	if c.traceSvc != nil {
+		_, span := c.traceSvc.Start(ctx, "localCache.EXISTS",
+			"cache.type", "local",
+			"cache.operation", "EXISTS",
+			"cache.key", key,
+		)
+		defer span.End()
+		_, ok := c.get(key)
+		return ok, nil
+	}
 
 	_, ok := c.get(key)
-
 	return ok, nil
+}
+
+// set is 内部方法，设置缓存
+func (c *localCacheSvc) set(key string, val interface{}, expire time.Duration) {
+	c.locker.Lock()
+	defer c.locker.Unlock()
+
+	// 直接删除而不调用 delWithLock（避免死锁）
+	c.del(key)
+	c.values[key] = &memCacheVal{
+		content:    val,
+		expireTime: time.Now().Add(expire),
+		expire:     expire,
+	}
 }
 
 // get is 内部方法，获取缓存
 func (c *localCacheSvc) get(key string) (*memCacheVal, bool) {
-	val, ok := c.values[key]
-	return val, ok
-}
+	c.locker.RLock()
+	defer c.locker.RUnlock()
 
-// add is 内部方法，添加缓存
-func (c *localCacheSvc) add(key string, val *memCacheVal) {
-	c.values[key] = val
-}
-
-// del is 内部方法，删除缓存
-func (c *localCacheSvc) del(key string) {
-	_, ok := c.get(key)
+	v, ok := c.values[key]
 	if ok {
-		delete(c.values, key)
+		// 判断是否过期，直接删除而不调用 delWithLock（避免死锁）
+		if v.expire != 0 && v.expireTime.Before(time.Now()) {
+			c.del(key)
+			return nil, false
+		}
+		return v, true
 	}
+
+	return nil, false
+}
+
+// delWithLock is 加锁形式删除缓存
+func (c *localCacheSvc) delWithLock(key string) {
+	c.locker.Lock()
+	defer c.locker.Unlock()
+	delete(c.values, key)
+}
+
+// del is 直接删除缓存
+func (c *localCacheSvc) del(key string) {
+	delete(c.values, key)
 }
 
 // clearExpired is 定期清除过期缓存
@@ -116,21 +162,22 @@ func (c *localCacheSvc) clearExpired() {
 		select {
 		// 接收到定时器发来的消息
 		case <-timeTicker.C:
+			c.locker.Lock()
 			for k, item := range c.values {
 				if item.expire != 0 && item.expireTime.Before(time.Now()) {
-					c.locker.Lock()
 					c.del(k)
-					c.locker.Unlock()
 				}
 			}
+			c.locker.Unlock()
 		}
 	}
 }
 
-func newLocalCacheSvc(config *cacheConf.Local) cache.ILocalCache {
+func newLocalCacheSvc(config *cacheConf.Local, traceSvc iCoreTrace.ITrace) cache.ILocalCache {
 	localCache := &localCacheSvc{
 		values:        make(map[string]*memCacheVal),
 		clearInterval: time.Duration(config.ClearInterval) * time.Second,
+		traceSvc:      traceSvc,
 	}
 
 	// 开启Goroutine清除过期缓存

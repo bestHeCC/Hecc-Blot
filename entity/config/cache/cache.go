@@ -6,7 +6,8 @@ type Config struct {
 }
 
 type Local struct {
-	ClearInterval int `mapstructure:"clear_interval"`
+	ClearInterval int  `mapstructure:"clear_interval"`
+	EnableTrace   bool `mapstructure:"enable_trace"`
 }
 
 type Redis struct {

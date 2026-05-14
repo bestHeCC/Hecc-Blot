@@ -52,7 +52,7 @@ func main() {
 		allErrors = append(allErrors, err)
 	}
 
-	cacheFactory := cache.NewCacheFactory(&config.Cache)
+	cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
 	responseSvc := api.NewResponseSvc()
 
 	// 如果有任何错误发生，统一进行处理

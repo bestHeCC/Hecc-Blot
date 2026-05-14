@@ -2,6 +2,7 @@ package cache
 
 import (
 	"hecc-blot/contract/cache"
+	iCoreTrace "hecc-blot/contract/trace"
 	cacheConf "hecc-blot/entity/config/cache"
 )
 
@@ -19,10 +20,10 @@ func (f Factory) Redis() cache.IRedisCache {
 	return f.redis
 }
 
-func NewCacheFactory(config *cacheConf.Config) cache.ICacheFactory {
+func NewCacheFactory(config *cacheConf.Config, traceSvc iCoreTrace.ITrace) cache.ICacheFactory {
 	return Factory{
 		config: config,
-		local:  newLocalCacheSvc(&config.Local),
-		redis:  newRedisCacheSvc(&config.Redis),
+		local:  newLocalCacheSvc(&config.Local, traceSvc),
+		redis:  newRedisCacheSvc(&config.Redis, traceSvc),
 	}
 }
