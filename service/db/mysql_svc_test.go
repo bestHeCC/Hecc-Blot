@@ -22,6 +22,8 @@ func TestMysqlSvc(t *testing.T) {
 		clearUp()
 	}()
 
+	dataId := 0
+
 	// 添加数据
 	t.Run("add", func(t *testing.T) {
 		newAccount := Account{
@@ -29,13 +31,15 @@ func TestMysqlSvc(t *testing.T) {
 		}
 		err = mysqlSvc.Add(&newAccount)
 		assert.NoError(t, err)
+
+		dataId = newAccount.ID
 	})
 
 	// find获取多条数据
 	t.Run("find", func(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = mysqlSvc.
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Find(data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -47,7 +51,7 @@ func TestMysqlSvc(t *testing.T) {
 	t.Run("find with page", func(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = mysqlSvc.
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Offset(0).
 			Limit(2).
 			Find(data)
@@ -61,7 +65,7 @@ func TestMysqlSvc(t *testing.T) {
 	t.Run("take", func(t *testing.T) {
 		data := Account{}
 		err = mysqlSvc.
-			Where("id = ?", 1).
+			Where("id = ?", dataId).
 			Take(&data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -74,7 +78,7 @@ func TestMysqlSvc(t *testing.T) {
 		data := Account{}
 		err = mysqlSvc.
 			Select("id, account_name").
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Take(&data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -87,13 +91,13 @@ func TestMysqlSvc(t *testing.T) {
 		newAccount := Account{
 			AccountName: "test-update",
 		}
-		err = mysqlSvc.Where("id = ?", 1).Save(&newAccount)
+		err = mysqlSvc.Where("id = ?", dataId).Save(&newAccount)
 		assert.NoError(t, err)
 	})
 
 	// 统计数据
 	t.Run("count", func(t *testing.T) {
-		count, err := mysqlSvc.Query(&Account{}).Where("id >= ?", 1).Count()
+		count, err := mysqlSvc.Query(&Account{}).Where("id >= ?", dataId).Count()
 		assert.NoError(t, err)
 
 		t.Logf("count: %d", count)
@@ -104,7 +108,7 @@ func TestMysqlSvc(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = mysqlSvc.
 			Select("id, account_name").
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Order("id desc").
 			Find(data)
 		assert.NoError(t, err)
@@ -115,7 +119,7 @@ func TestMysqlSvc(t *testing.T) {
 
 	// 删除数据
 	t.Run("delete", func(t *testing.T) {
-		err = mysqlSvc.Where("id = ?", 1).Remove(&Account{})
+		err = mysqlSvc.Where("id = ?", dataId).Remove(&Account{})
 		assert.NoError(t, err)
 	})
 
@@ -131,7 +135,7 @@ func TestMysqlSvc(t *testing.T) {
 		updateAccount := Account{
 			Password: "update-transaction",
 		}
-		err = mysqlSvc.Where("id = ?", newAccount.ID).Save(&updateAccount)
+		err = tx.Where("id = ?", newAccount.ID).Save(&updateAccount)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
@@ -140,13 +144,13 @@ func TestMysqlSvc(t *testing.T) {
 
 	t.Run("transaction with rollback", func(t *testing.T) {
 		mysqlSvc.WithContext(context.Background())
-		mysqlSvc.Begin()
+		tx := mysqlSvc.Begin()
 		newAccount := Account{
 			AccountName: "test-transaction-rollback",
 		}
-		err = mysqlSvc.Add(&newAccount)
+		err = tx.Add(&newAccount)
 		assert.NoError(t, err)
 
-		mysqlSvc.Rollback()
+		tx.Rollback()
 	})
 }

@@ -21,11 +21,16 @@ type BaseDbSvc struct {
 	model db.IDbModel
 }
 
+// Begin 开启事务，返回新的 BaseDbSvc 实例，原始实例不受影响。
+// Commit/Rollback 只在返回的实例上调用才有效。
 func (b *BaseDbSvc) Begin() db.IDb {
-	b.db = b.db.Begin()
 	gl := b.db.Statement.Logger.(logger.Interface)
+	txDB := b.db.Begin()
 	gl.Info(b.ctx, "transaction started")
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  txDB,
+	}
 }
 
 func (b *BaseDbSvc) Rollback() {

@@ -197,13 +197,13 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	// a.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
 	mysqlSvc := a.DbFactory.Build(ctx)
 	// 开启事务
-	mysqlSvc.Begin()
-	err := mysqlSvc.Where("id = ?", 2).Add(&data)
+	tx := mysqlSvc.Begin()
+	err := tx.Where("id = ?", 2).Add(&data)
 	if err != nil {
 		return nil, errorSvc.NewError(response.Fail, err)
 	}
 	// 提交事务
-	err = mysqlSvc.Commit()
+	err = tx.Commit()
 	if err != nil {
 		return nil, errorSvc.NewError(response.Fail, err)
 	}

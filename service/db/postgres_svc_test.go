@@ -22,6 +22,8 @@ func TestPostgresSvc(t *testing.T) {
 		clearUp()
 	}()
 
+	dataId := 0
+
 	// 添加数据
 	t.Run("add", func(t *testing.T) {
 		newAccount := Account{
@@ -29,13 +31,15 @@ func TestPostgresSvc(t *testing.T) {
 		}
 		err = postgresSvc.Add(&newAccount)
 		assert.NoError(t, err)
+
+		dataId = newAccount.ID
 	})
 
 	// find获取多条数据
 	t.Run("find", func(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = postgresSvc.
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Find(data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -47,7 +51,7 @@ func TestPostgresSvc(t *testing.T) {
 	t.Run("find with page", func(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = postgresSvc.
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Offset(0).
 			Limit(2).
 			Find(data)
@@ -61,7 +65,7 @@ func TestPostgresSvc(t *testing.T) {
 	t.Run("take", func(t *testing.T) {
 		data := Account{}
 		err = postgresSvc.
-			Where("id = ?", 1).
+			Where("id = ?", dataId).
 			Take(&data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -74,7 +78,7 @@ func TestPostgresSvc(t *testing.T) {
 		data := Account{}
 		err = postgresSvc.
 			Select("id, account_name").
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Take(&data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -87,13 +91,13 @@ func TestPostgresSvc(t *testing.T) {
 		newAccount := Account{
 			AccountName: "test-update",
 		}
-		err = postgresSvc.Where("id = ?", 1).Save(&newAccount)
+		err = postgresSvc.Where("id = ?", dataId).Save(&newAccount)
 		assert.NoError(t, err)
 	})
 
 	// 统计数据
 	t.Run("count", func(t *testing.T) {
-		count, err := postgresSvc.Query(&Account{}).Where("id >= ?", 1).Count()
+		count, err := postgresSvc.Query(&Account{}).Where("id >= ?", dataId).Count()
 		assert.NoError(t, err)
 
 		t.Logf("count: %d", count)
@@ -104,7 +108,7 @@ func TestPostgresSvc(t *testing.T) {
 		data := new(make([]Account, 0))
 		err = postgresSvc.
 			Select("id, account_name").
-			Where("id >= ? and id <= ?", 1, 8).
+			Where("id >= ?", dataId).
 			Order("id desc").
 			Find(data)
 		assert.NoError(t, err)
@@ -115,7 +119,7 @@ func TestPostgresSvc(t *testing.T) {
 
 	// 删除数据
 	t.Run("delete", func(t *testing.T) {
-		err = postgresSvc.Where("id = ?", 1).Remove(&Account{})
+		err = postgresSvc.Where("id = ?", dataId).Remove(&Account{})
 		assert.NoError(t, err)
 	})
 
@@ -131,7 +135,7 @@ func TestPostgresSvc(t *testing.T) {
 		updateAccount := Account{
 			Password: "update-transaction",
 		}
-		err = postgresSvc.Where("id = ?", newAccount.ID).Save(&updateAccount)
+		err = tx.Where("id = ?", newAccount.ID).Save(&updateAccount)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
@@ -140,14 +144,14 @@ func TestPostgresSvc(t *testing.T) {
 
 	t.Run("transaction with rollback", func(t *testing.T) {
 		postgresSvc.WithContext(context.Background())
-		postgresSvc.Begin()
+		tx := postgresSvc.Begin()
 		newAccount := Account{
 			AccountName: "test-transaction-rollback",
 		}
-		err = postgresSvc.Add(&newAccount)
+		err = tx.Add(&newAccount)
 		assert.NoError(t, err)
 
-		postgresSvc.Rollback()
+		tx.Rollback()
 	})
 
 }
