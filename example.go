@@ -188,16 +188,27 @@ type AddApi struct {
 }
 
 func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-	data := AccountModel{}
+	data := AccountModel{
+		AccountName: "example",
+	}
 
 	a.LogSvc.Info(ctx, "log", "account", data)
 
 	// a.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
-	err := a.DbFactory.Build(ctx).Where("id = ?", 2).Take(&data)
+	mysqlSvc := a.DbFactory.Build(ctx)
+	// 开启事务
+	mysqlSvc.Begin()
+	err := mysqlSvc.Where("id = ?", 2).Add(&data)
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+	// 提交事务
+	err = mysqlSvc.Commit()
 	if err != nil {
 		return nil, errorSvc.NewError(response.Fail, err)
 	}
 
+	// 使用缓存
 	a.CacheFactory.Local().Set(ctx, "data", data, 10)
 	a.CacheFactory.Redis().Set(ctx, "data", data, -1)
 
