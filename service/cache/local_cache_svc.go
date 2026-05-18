@@ -132,9 +132,7 @@ func (c *localCacheSvc) get(key string) (*memCacheVal, bool) {
 
 	v, ok := c.values[key]
 	if ok {
-		// 判断是否过期，直接删除而不调用 delWithLock（避免死锁）
 		if v.expire != 0 && v.expireTime.Before(time.Now()) {
-			c.del(key)
 			return nil, false
 		}
 		return v, true
@@ -155,29 +153,42 @@ func (c *localCacheSvc) del(key string) {
 	delete(c.values, key)
 }
 
-// clearExpired is 定期清除过期缓存
+// clearExpired is 定期清除过期缓存。
+// 分两阶段：先持读锁收集过期 key，再持写锁二次确认后删除，
+// 避免写锁持有期间全量扫描阻塞所有读写。
 func (c *localCacheSvc) clearExpired() {
-	// 检查间隔是否有效，无效则不启动清理
 	if c.clearInterval <= 0 {
 		return
 	}
 
-	// 声明定时器
 	timeTicker := time.NewTicker(c.clearInterval)
 	defer timeTicker.Stop()
 
-	// for死循环，保存协程不会退出
 	for {
 		select {
-		// 接收到定时器发来的消息
 		case <-timeTicker.C:
-			c.locker.Lock()
+			// 阶段一：读锁收集过期 key
+			var expiredKeys []string
+			c.locker.RLock()
 			for k, item := range c.values {
 				if item.expire != 0 && item.expireTime.Before(time.Now()) {
-					c.del(k)
+					expiredKeys = append(expiredKeys, k)
 				}
 			}
-			c.locker.Unlock()
+			c.locker.RUnlock()
+
+			// 阶段二：写锁二次确认后删除（Set 可能在两阶段之间刷新了 key）
+			if len(expiredKeys) > 0 {
+				c.locker.Lock()
+				for _, k := range expiredKeys {
+					if item, ok := c.values[k]; ok {
+						if item.expire != 0 && item.expireTime.Before(time.Now()) {
+							delete(c.values, k)
+						}
+					}
+				}
+				c.locker.Unlock()
+			}
 		}
 	}
 }
