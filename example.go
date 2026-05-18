@@ -66,6 +66,9 @@ func main() {
 		if traceSvc != nil {
 			traceClearUp()
 		}
+		if cacheFactory.Redis() != nil {
+			cacheFactory.Redis().Close()
+		}
 	}()
 
 	// 注册至ioc容器
