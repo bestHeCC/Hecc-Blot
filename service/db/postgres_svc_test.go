@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"testing"
 
 	"hecc-blot/service/log"
@@ -116,6 +117,37 @@ func TestPostgresSvc(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		err = postgresSvc.Where("id = ?", 1).Remove(&Account{})
 		assert.NoError(t, err)
+	})
+
+	t.Run("transaction", func(t *testing.T) {
+		postgresSvc.WithContext(context.Background())
+		tx := postgresSvc.Begin()
+		newAccount := Account{
+			AccountName: "test-transaction",
+		}
+		err = tx.Add(&newAccount)
+		assert.NoError(t, err)
+
+		updateAccount := Account{
+			Password: "update-transaction",
+		}
+		err = postgresSvc.Where("id = ?", newAccount.ID).Save(&updateAccount)
+		assert.NoError(t, err)
+
+		err = tx.Commit()
+		assert.NoError(t, err)
+	})
+
+	t.Run("transaction with rollback", func(t *testing.T) {
+		postgresSvc.WithContext(context.Background())
+		postgresSvc.Begin()
+		newAccount := Account{
+			AccountName: "test-transaction-rollback",
+		}
+		err = postgresSvc.Add(&newAccount)
+		assert.NoError(t, err)
+
+		postgresSvc.Rollback()
 	})
 
 }

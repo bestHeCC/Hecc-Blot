@@ -18,4 +18,7 @@ type IDb interface {
 	Take(dst interface{}) error
 	Where(args ...interface{}) IDb
 	WithContext(ctx context.Context)
+	Begin() IDb
+	Commit() error
+	Rollback()
 }

@@ -21,6 +21,25 @@ type BaseDbSvc struct {
 	model db.IDbModel
 }
 
+func (b *BaseDbSvc) Begin() db.IDb {
+	b.db = b.db.Begin()
+	gl := b.db.Statement.Logger.(logger.Interface)
+	gl.Info(b.ctx, "transaction started")
+	return b
+}
+
+func (b *BaseDbSvc) Rollback() {
+	gl := b.db.Statement.Logger.(logger.Interface)
+	gl.Warn(b.ctx, "transaction rollback")
+	b.db.Rollback()
+}
+
+func (b *BaseDbSvc) Commit() error {
+	gl := b.db.Statement.Logger.(logger.Interface)
+	gl.Info(b.ctx, "transaction committed")
+	return b.db.Commit().Error
+}
+
 // Add 添加记录
 func (b *BaseDbSvc) Add(entry db.IDbModel) error {
 	defer b.reset()

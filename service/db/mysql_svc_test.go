@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"testing"
 
 	"hecc-blot/service/log"
@@ -118,4 +119,34 @@ func TestMysqlSvc(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("transaction", func(t *testing.T) {
+		mysqlSvc.WithContext(context.Background())
+		tx := mysqlSvc.Begin()
+		newAccount := Account{
+			AccountName: "test-transaction",
+		}
+		err = tx.Add(&newAccount)
+		assert.NoError(t, err)
+
+		updateAccount := Account{
+			Password: "update-transaction",
+		}
+		err = mysqlSvc.Where("id = ?", newAccount.ID).Save(&updateAccount)
+		assert.NoError(t, err)
+
+		err = tx.Commit()
+		assert.NoError(t, err)
+	})
+
+	t.Run("transaction with rollback", func(t *testing.T) {
+		mysqlSvc.WithContext(context.Background())
+		mysqlSvc.Begin()
+		newAccount := Account{
+			AccountName: "test-transaction-rollback",
+		}
+		err = mysqlSvc.Add(&newAccount)
+		assert.NoError(t, err)
+
+		mysqlSvc.Rollback()
+	})
 }
