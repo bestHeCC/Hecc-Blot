@@ -111,6 +111,6 @@ func newLogSvc(logConf *logConfig.LocalConfig) (log.ILog, error) {
 	}
 
 	return LogSvc{
-		logger: zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)),
+		logger: zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.ErrorLevel)),
 	}, nil
 }
