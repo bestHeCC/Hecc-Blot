@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	iCoreApi "hecc-blot/contract/api"
 	iCoreCache "hecc-blot/contract/cache"
 	iCoreDb "hecc-blot/contract/db"
 	iCoreError "hecc-blot/contract/error"
 	iCoreLog "hecc-blot/contract/log"
+	iCoreSse "hecc-blot/contract/sse"
 	entityApi "hecc-blot/entity/api"
 	coreConfig "hecc-blot/entity/config"
 	"hecc-blot/enum/response"
@@ -19,6 +21,7 @@ import (
 	errorSvc "hecc-blot/service/error"
 	"hecc-blot/service/ioc"
 	"hecc-blot/service/log"
+	"hecc-blot/service/sse"
 	"hecc-blot/service/trace"
 
 	"github.com/gin-gonic/gin"
@@ -79,6 +82,10 @@ func main() {
 
 	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
 	register(apiHandle)
+
+	sseHandle := sse.NewSseSvc(apiHandle.Engine())
+	registerSse(sseHandle)
+
 	apiHandle.Listen()
 }
 
@@ -113,7 +120,14 @@ func register(apiHandle iCoreApi.IApiHandle) {
 		// iCoreApi.IApiHandle的Post方法（Get方法同理），完成自动注入
 		// 自动校验参数，同时自动包装返回值
 		// 统一返回值为{code:200, message:"请求成功", data:{}}
-		apiHandle.Post("account/add", &AddApi{})
+		apiHandle.Post("example/api", &ExampleApi{})
+	}
+}
+
+func registerSse(sseHandle iCoreSse.ISseHandle) {
+	sseHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
+	{
+		sseHandle.Get("example/sse", &ExampleSse{})
 	}
 }
 
@@ -166,20 +180,20 @@ func (b AccountModel) GetID() int {
 	return b.ID
 }
 
-// AddRequest 定义Add请求参数
-type AddRequest struct {
+// ExampleRequest 定义Add请求参数
+type ExampleRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
 // GetMessages 自定义错误信息
-func (a AddRequest) GetMessages() entityApi.Messages {
+func (a ExampleRequest) GetMessages() entityApi.Messages {
 	return entityApi.Messages{
 		"Name.required": "名字不能为空",
 	}
 }
 
-// AddApi 定义Add接口
-type AddApi struct {
+// ExampleApi 定义Add接口
+type ExampleApi struct {
 	// 注意结构体内的字段需要保证顺序，注入的服务需要放在最前面，请求参数需要放在最后面
 	// 通过inject tag，注册路由时会自动注入对应服务
 	DbFactory    iCoreDb.IDbFactory       `inject:""`
@@ -187,18 +201,18 @@ type AddApi struct {
 	CacheFactory iCoreCache.ICacheFactory `inject:""`
 
 	// 请求参数，注册路由时会自动绑定并校验
-	AddRequest
+	ExampleRequest
 }
 
-func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+func (e ExampleApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	data := AccountModel{
 		AccountName: "example",
 	}
 
-	a.LogSvc.Info(ctx, "log", "account", data)
+	e.LogSvc.Info(ctx, "log", "account", data)
 
-	// a.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
-	mysqlSvc := a.DbFactory.Build(ctx)
+	// e.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
+	mysqlSvc := e.DbFactory.Build(ctx)
 	// 开启事务
 	tx := mysqlSvc.Begin()
 	err := tx.Where("id = ?", 2).Add(&data)
@@ -212,9 +226,45 @@ func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	}
 
 	// 使用缓存
-	a.CacheFactory.Local().Set(ctx, "data", data, 10)
-	a.CacheFactory.Redis().Set(ctx, "data", data, -1)
+	e.CacheFactory.Local().Set(ctx, "data", data, 10)
+	e.CacheFactory.Redis().Set(ctx, "data", data, -1)
 
 	// 此处只需要关注返回值，接口返回格式由iCoreApi.IResponse统一处理
 	return data, nil
+}
+
+type ExampleSse struct {
+	LogSvc iCoreLog.ILog `inject:""`
+}
+
+func (e ExampleSse) Serve(ctx *gin.Context) error {
+	e.LogSvc.Info(ctx, "log", "sse", "start")
+
+	// 获取流写入对象
+	writer := ctx.Writer
+	// 确保连接关闭时退出循环
+	clientCtx := ctx.Request.Context()
+
+	// 循环推送消息（模拟实时数据）
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-clientCtx.Done():
+			// 客户端断开连接，退出
+			fmt.Println("客户端断开连接")
+			return nil
+		case <-ticker.C:
+			// 构造 SSE 消息（固定格式）
+			msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
+			// 写入响应流
+			_, err := writer.WriteString(msg)
+			if err != nil {
+				return err
+			}
+			// 立即刷新到客户端
+			writer.Flush()
+		}
+	}
 }

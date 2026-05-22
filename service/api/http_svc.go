@@ -35,6 +35,10 @@ var mapEnv = map[envEnum.Value]string{
 	envEnum.TestMode:    gin.TestMode,
 }
 
+func (f *ApiHandle) Engine() *gin.Engine {
+	return f.engine
+}
+
 func (f *ApiHandle) Middleware(middlewares ...iCoreApi.IMiddleware) iCoreApi.IApiHandle {
 	for _, iMiddleware := range middlewares {
 		ioc.Inject(iMiddleware)
