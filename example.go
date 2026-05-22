@@ -238,7 +238,7 @@ type ExampleSse struct {
 }
 
 func (e ExampleSse) Serve(ctx *gin.Context) error {
-	e.LogSvc.Info(ctx, "log", "sse", "start")
+	e.LogSvc.Info(ctx, "sse start")
 
 	// 获取流写入对象
 	writer := ctx.Writer

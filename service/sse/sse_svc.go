@@ -1,7 +1,6 @@
 package sse
 
 import (
-	"net/http"
 	"reflect"
 
 	iCoreApi "hecc-blot/contract/api"
@@ -37,7 +36,7 @@ func (f *SseHandle) Get(apiPath string, sseInstance iCoreSse.ISse) {
 		c.Writer.Header().Set("Connection", "keep-alive")
 
 		if err := sseInstance.Serve(c); err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
+			c.SSEvent("error", err.Error())
 		}
 	})
 }
