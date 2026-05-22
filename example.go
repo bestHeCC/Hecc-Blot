@@ -125,10 +125,7 @@ func register(apiHandle iCoreApi.IApiHandle) {
 }
 
 func registerSse(sseHandle iCoreSse.ISseHandle) {
-	sseHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
-	{
-		sseHandle.Get("example/sse", &ExampleSse{})
-	}
+	sseHandle.Get("example/sse", &ExampleSse{})
 }
 
 // ReplayMiddleware 定义Replay中间件

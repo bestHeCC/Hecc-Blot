@@ -17,6 +17,7 @@ Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口
 - **事务支持**: 链式调用风格的数据库事务 API
 - **双层缓存**: 本地内存缓存 + Redis 缓存，支持过期清理
 - **链路追踪**: 基于 OpenTelemetry，支持 OTLP 导出到 Jaeger
+- **SSE 推送**: 支持 Server-Sent Events，与 API 共享端口，适用于实时数据推送
 - **可替换**: 所有组件可独立替换，只需实现对应接口并注册到 IOC
 
 ## 快速开始
@@ -46,6 +47,11 @@ func main() {
     apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
     apiHandle.Middleware(&TokenMiddleware{})
     apiHandle.Post("account/add", &AddApi{})
+
+    sseHandle := sse.NewSseSvc(apiHandle.Engine())
+    sseHandle.Middleware(&TokenMiddleware{})
+    sseHandle.Get("events/time", &TimeSse{})
+
     apiHandle.Listen()
 }
 ```
@@ -61,6 +67,7 @@ func main() {
 │   ├── db/           # 数据库操作、数据库工厂、模型接口
 │   ├── error/        # 统一错误接口
 │   ├── log/          # 日志接口
+│   ├── sse/          # SSE 接口
 │   └── trace/        # 链路追踪接口
 ├── entity/           # 实体与配置结构体
 │   ├── api/          # 校验器消息类型
@@ -73,6 +80,7 @@ func main() {
 │   ├── error/        # 错误处理
 │   ├── ioc/          # IOC 容器
 │   ├── log/          # 本地日志（Zap）、阿里云 SLS 日志
+│   ├── sse/          # SSE 推送服务
 │   └── trace/        # OpenTelemetry 追踪、HTTP 中间件
 ├── docs/             # 文档
 ├── util/             # 工具函数
@@ -105,6 +113,7 @@ func main() {
 | [数据库组件](docs/database.md) | CRUD 操作、事务、多数据库切换、Model 定义 |
 | [缓存组件](docs/cache.md) | 本地缓存、Redis 缓存、过期清理、链路追踪集成 |
 | [链路追踪](docs/trace.md) | OpenTelemetry 集成、Span 操作、跨服务传递 |
+| [SSE 服务](docs/sse.md) | SSE 推送使用、路由注册、中间件复用、错误处理 |
 
 ## 核心组件概览
 
@@ -176,6 +185,33 @@ defer span.End()
 ```
 
 → [链路追踪说明](docs/trace.md)
+
+### SSE 实时推送
+
+与 API 共享端口，通过 `ISse` 接口实现服务端主动推送。
+
+```go
+type TimeSse struct {
+    LogSvc iCoreLog.ILog `inject:""`
+}
+
+func (t TimeSse) Serve(ctx *gin.Context) error {
+    ticker := time.NewTicker(time.Second)
+    defer ticker.Stop()
+    for {
+        select {
+        case <-ctx.Request.Context().Done():
+            return nil
+        case <-ticker.C:
+            writer := ctx.Writer
+            writer.WriteString(fmt.Sprintf("data: %s\n\n", time.Now()))
+            writer.Flush()
+        }
+    }
+}
+```
+
+→ [SSE 服务](docs/sse.md)
 
 ## 设计原则
 

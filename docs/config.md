@@ -8,6 +8,8 @@
 server:
   port: "9500"        # 服务端口
   env: dev            # 运行环境：dev / test / product
+  name: Hecc-Blot     # 服务名称
+  enable_trace: true  # 是否开启链路追踪
 
 db:
   mysql:
@@ -55,10 +57,11 @@ log:
   sls:                         # 阿里云日志服务（可选）
     enable: false
     endpoint: ""
-    access_key_id: ""
-    access_key_secret: ""
+    access_key: ""
+    secret_key: ""
+    secret_token: ""
     project: ""
-    logstore: ""
+    log_store: ""
 
 trace:
   service_name: Hecc-Blot      # 服务名称
@@ -76,6 +79,8 @@ trace:
 |--------|------|------|------|
 | `port` | string | 是 | 服务监听端口 |
 | `env` | string | 是 | 运行环境，映射到 Gin 模式 |
+| `name` | string | 否 | 服务名称 |
+| `enable_trace` | bool | 否 | 是否开启 HTTP 链路追踪中间件 |
 
 env 映射关系：
 
@@ -141,6 +146,16 @@ env 映射关系：
 ### log.sls
 
 阿里云日志服务（可选），enable 为 false 则不初始化。
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `enable` | bool | 否 | 是否启用 |
+| `endpoint` | string | 是 | SLS 端点地址 |
+| `access_key` | string | 是 | 阿里云 AccessKey |
+| `secret_key` | string | 是 | 阿里云 SecretKey |
+| `secret_token` | string | 否 | 阿里云 STS Token |
+| `project` | string | 是 | SLS Project 名称 |
+| `log_store` | string | 是 | SLS LogStore 名称 |
 
 ### trace
 

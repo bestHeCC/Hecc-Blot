@@ -17,6 +17,8 @@ go mod tidy
 server:
   port: "9500"
   env: dev
+  name: Hecc-Blot
+  enable_trace: true
 
 db:
   mysql:
@@ -227,12 +229,19 @@ func main() {
     // 8. 创建 API 处理器并注册路由
     apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
     apiHandle.Middleware(&TokenMiddleware{})
-    {
-        apiHandle.Post("account/add", &AddAccountApi{})
-        apiHandle.Get("account/list", &ListAccountApi{})
+	{
+	apiHandle.Post("account/add", &AddAccountApi{})
+	apiHandle.Get("account/list", &ListAccountApi{})
     }
 
-    // 9. 启动服务（阻塞直到收到 SIGINT/SIGTERM）
+    // 9. 注册 SSE 路由（可选，需要时使用）
+    sseHandle := sse.NewSseSvc(apiHandle.Engine())
+    sseHandle.Middleware(&TokenMiddleware{})
+    {
+        sseHandle.Get("events/time", &TimeSse{})
+    }
+
+    // 10. 启动服务（阻塞直到收到 SIGINT/SIGTERM）
     apiHandle.Listen()
 }
 ```
@@ -278,4 +287,5 @@ go run main.go
 - [日志组件](logging.md)
 - [链路追踪](trace.md)
 - [IOC 注入机制](ioc_injection.md)
+- [SSE 服务](sse.md)
 - [替换框架组件](component_replacement.md)

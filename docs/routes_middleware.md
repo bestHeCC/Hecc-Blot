@@ -2,7 +2,7 @@
 
 ## 概述
 
-Hecc-Blot 框架基于 Gin 框架实现了路由和中间件的自动化注册机制，并提供参数自动校验和返回值自动包装功能。
+Hecc-Blot 框架基于 Gin 框架实现了路由和中间件的自动化注册机制，并提供参数自动校验和返回值自动包装功能。框架同时支持 API 路由和 SSE（Server-Sent Events）路由。
 
 **请求处理流程**:
 
@@ -43,6 +43,7 @@ type IApiHandle interface {
     Post(apiPath string, api interface{})
     Middleware(middlewares ...IMiddleware) IApiHandle
     Listen()
+    Engine() *gin.Engine
 }
 ```
 
@@ -53,7 +54,7 @@ type IApiHandle interface {
 responseSvc := api.NewResponseSvc()
 
 // 创建 API 处理器
-apiHandle := api.NewApiSvc(&config.Server, responseSvc)
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
 ```
 
 ### 3. 注册路由
@@ -351,8 +352,11 @@ func main() {
     
     // 创建组件
     logSvc, _ := log.NewLogger(&config.Log)
+    traceSvc, traceClearUp, _ := trace.NewTraceSvc(&config.Trace)
+    defer traceClearUp()
     dbFactory, clearUp, _ := db.NewDbFactory(&config.Db, logSvc)
-    cacheFactory := cache.NewCacheFactory(&config.Cache)
+    defer clearUp()
+    cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
     responseSvc := api.NewResponseSvc()
     
     // 注册到 IOC 容器
@@ -360,9 +364,10 @@ func main() {
     ioc.Set(new(iCoreLog.ILog), logSvc)
     ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
     ioc.Set(new(iCoreApi.IResponse), responseSvc)
+    ioc.Set(new(iCoreTrace.ITrace), traceSvc)
     
     // 创建 API 处理器
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
     
     // 注册路由和中间件
     register(apiHandle)
@@ -394,14 +399,104 @@ func register(apiHandle iCoreApi.IApiHandle) {
 
 ***
 
+## SSE 路由注册
+
+### SSE 处理器接口
+
+```go
+type ISseHandle interface {
+    Get(apiPath string, sse ISse)
+    Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
+}
+```
+
+SSE 复用 `iCoreApi.IMiddleware` 接口，无需单独定义中间件类型。
+
+### 创建 SSE 处理器
+
+SSE 与 API 共享同一 Gin Engine，创建时传入 API 的 Engine：
+
+```go
+// 创建 SSE 处理器，共享 API 的 Engine
+sseHandle := sse.NewSseSvc(apiHandle.Engine())
+```
+
+### 注册 SSE 路由
+
+```go
+func registerSse(sseHandle iCoreSse.ISseHandle) {
+    sseHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
+    {
+        sseHandle.Get("example/sse", &ExampleSse{})
+    }
+}
+```
+
+### SSE 端点定义
+
+实现 `ISse` 接口，通过 `Serve` 方法处理长连接：
+
+```go
+type ExampleSse struct {
+    LogSvc iCoreLog.ILog `inject:""`
+}
+
+func (e ExampleSse) Serve(ctx *gin.Context) error {
+    e.LogSvc.Info(ctx, "sse start")
+
+    writer := ctx.Writer
+    clientCtx := ctx.Request.Context()
+
+    ticker := time.NewTicker(1 * time.Second)
+    defer ticker.Stop()
+
+    for {
+        select {
+        case <-clientCtx.Done():
+            return nil
+        case <-ticker.C:
+            msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
+            if _, err := writer.WriteString(msg); err != nil {
+                return err
+            }
+            writer.Flush()
+        }
+    }
+}
+```
+
+### SSE 请求处理流程
+
+```
+请求 → [中间件链] → [设置SSE响应头] → [Serve()] → [持续推送事件]
+                                                 ↓
+                                         客户端断开 / Serve 返回 error
+                                                 ↓
+                                         发送 error SSE 事件 → 结束
+```
+
+框架自动设置 SSE 响应头（`Content-Type: text/event-stream`、`Cache-Control: no-cache`、`Connection: keep-alive`）。
+
+### 注意事项
+
+- **共享端口**: SSE 与 API 共用同一 Engine，只需调用 `apiHandle.Listen()` 一次
+- **长连接**: Serve 方法需监听 `ctx.Request.Context().Done()` 感知客户端断开
+- **流刷新**: 每次 `Write` 后需立即 `writer.Flush()`
+- **错误处理**: Serve 返回 error 时，框架通过 `c.SSEvent("error", ...)` 发送，不会尝试修改 HTTP 状态码
+- **中间件复用**: SSE 与 API 共用 `IMiddleware`，注册中间件的方式完全一致
+
+***
+
 ## 配置说明
 
 ### 服务配置
 
 ```yaml
 server:
-  port: "8080"
-  env: dev  # dev | test | product
+  port: "9500"
+  env: dev           # dev | test | product
+  name: Hecc-Blot    # 服务名称
+  enable_trace: true # 是否开启链路追踪
 ```
 
 ### 环境模式映射

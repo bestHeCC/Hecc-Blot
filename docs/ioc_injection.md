@@ -245,7 +245,7 @@ func main() {
     ioc.Set(new(iCoreLog.ILog), myLog)
     
     // 创建 API 处理器
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
     
     // 注册 API（自动注入时会使用自定义实现）
     apiHandle.Post("account/add", &AddApi{})
