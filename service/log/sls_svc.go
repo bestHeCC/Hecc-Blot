@@ -3,6 +3,8 @@ package log
 import (
 	"context"
 	"encoding/json"
+	"runtime"
+	"strconv"
 	"time"
 
 	ilog "hecc-blot/contract/log"
@@ -36,10 +38,20 @@ func (s *SlsSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 
 func (s *SlsSvc) send(ctx context.Context, level string, msg string, fields ...interface{}) {
 	traceId := getTraceId(util.ExtractContext(ctx))
+
+	var caller string
+	if _, file, line, ok := runtime.Caller(2); ok {
+		caller = file + ":" + strconv.Itoa(line)
+	}
+
 	contents := []*sls.LogContent{
 		newLogContent("level", level),
 		newLogContent("message", msg),
 		newLogContent("time", time.Now().Format("2006-01-02 15:04:05.000")),
+	}
+
+	if caller != "" {
+		contents = append(contents, newLogContent("caller", caller))
 	}
 
 	if traceId != "" {
