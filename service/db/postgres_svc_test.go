@@ -154,4 +154,28 @@ func TestPostgresSvc(t *testing.T) {
 		tx.Rollback()
 	})
 
+	t.Run("take after save", func(t *testing.T) {
+		newAccount := Account{
+			AccountName: "test-take-after-save",
+		}
+		err = postgresSvc.Add(&newAccount)
+		assert.NoError(t, err)
+		t.Logf("newAccount: %+v", newAccount)
+
+		newAccount.Password = "test-take-after-save"
+		err = postgresSvc.Where("id = ?", newAccount.ID).Save(&newAccount)
+		assert.NoError(t, err)
+		t.Logf("newAccount: %+v", newAccount)
+
+		data := Account{}
+		err = postgresSvc.
+			Where("id >= ?", newAccount.ID).
+			Take(&data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data)
+		assert.Equal(t, "test-take-after-save", data.AccountName)
+		assert.Equal(t, "test-take-after-save", data.Password)
+
+		t.Logf("data: %+v", data)
+	})
 }

@@ -47,20 +47,20 @@ func (b *BaseDbSvc) Commit() error {
 
 // Add 添加记录
 func (b *BaseDbSvc) Add(entry db.IDbModel) error {
-	defer b.reset()
 	return b.db.Create(entry).Error
 }
 
 // Remove 删除记录
 func (b *BaseDbSvc) Remove(entry db.IDbModel) error {
-	defer b.reset()
 	return b.db.Delete(&entry).Error
 }
 
-// Query 查询
+// Query 查询 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Query(entry db.IDbModel) db.IDb {
-	b.db = b.db.Model(&entry)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Model(&entry),
+	}
 }
 
 // Save 保存记录
@@ -70,51 +70,58 @@ func (b *BaseDbSvc) Save(entry db.IDbModel) error {
 
 // Count 统计数量
 func (b *BaseDbSvc) Count() (int64, error) {
-	defer b.reset()
 	var count int64
 	err := b.db.Count(&count).Error
 	return count, err
 }
 
-// Order 排序
+// Order 排序 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Order(fields ...string) db.IDb {
-	b.db = b.db.Order(fields)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Order(fields),
+	}
 }
 
-// Select 选择字段
+// Select 选择字段 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Select(args ...interface{}) db.IDb {
-	b.db = b.db.Select(args[0], args[1:]...)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Select(args[0], args[1:]...),
+	}
 }
 
-// Offset 偏移
+// Offset 偏移 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Offset(v int) db.IDb {
-	b.db = b.db.Offset(v)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Offset(v),
+	}
 }
 
-// Limit 限制
+// Limit 限制 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Limit(v int) db.IDb {
-	b.db = b.db.Limit(v)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Limit(v),
+	}
 }
 
-// Where 条件
+// Where 条件 — 返回副本，不修改原实例
 func (b *BaseDbSvc) Where(args ...interface{}) db.IDb {
-	b.db = b.db.Where(args[0], args[1:]...)
-	return b
+	return &BaseDbSvc{
+		ctx: b.ctx,
+		db:  b.db.Where(args[0], args[1:]...),
+	}
 }
 
 // Take 获取一条
 func (b *BaseDbSvc) Take(dst interface{}) error {
-	defer b.reset()
 	return b.db.Take(dst).Error
 }
 
 // Find 查询多条
 func (b *BaseDbSvc) Find(dst interface{}) error {
-	defer b.reset()
 	return b.db.Find(dst).Error
 }
 
@@ -124,9 +131,9 @@ func (b *BaseDbSvc) WithContext(ctx context.Context) {
 	b.db = b.db.WithContext(ctx)
 }
 
-// reset 重置 GORM 会话，避免污染
-func (b *BaseDbSvc) reset() {
-	b.db = b.db.Session(&gorm.Session{NewDB: true})
+// GetInstance 返回底层 GORM 实例，供 Factory 创建副本或执行高级查询
+func (b *BaseDbSvc) GetInstance() any {
+	return b.db
 }
 
 // initGormConfig 初始化 GORM 通用配置

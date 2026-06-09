@@ -84,9 +84,16 @@ func TestFactory(t *testing.T) {
 
 	ctx := context.Background()
 	t.Run("default mysql", func(t *testing.T) {
+		newData := Account{
+			AccountName: "mysql",
+		}
+		mysqlDB := dbFactory.Build(ctx)
+		err = mysqlDB.Add(&newData)
+		assert.NoError(t, err)
+
 		data := Account{}
-		err = dbFactory.Build(ctx).
-			Where("id = ?", 1).
+		err = mysqlDB.
+			Where("id = ?", newData.ID).
 			Take(&data)
 		assert.NoError(t, err)
 		assert.NotNil(t, data)
@@ -125,9 +132,16 @@ func TestFactory(t *testing.T) {
 	t.Run("set postgres with mysql", func(t *testing.T) {
 		dbFactory.SetDefault(dbEnum.Postgres)
 
+		newData := Account{
+			AccountName: "mysql",
+		}
+		mysqlDB := dbFactory.Build(ctx, dbEnum.Mysql)
+		err = mysqlDB.Add(&newData)
+		assert.NoError(t, err)
+
 		data := Account{}
-		err = dbFactory.Build(ctx, dbEnum.Mysql).
-			Where("id = ?", 1).
+		err = mysqlDB.
+			Where("id = ?", newData.ID).
 			Take(&data)
 
 		assert.NoError(t, err)

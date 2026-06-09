@@ -2,14 +2,14 @@ package db
 
 import (
 	"context"
-
-	"hecc-blot/contract/log"
-	dbConf "hecc-blot/entity/config/db"
-
 	"fmt"
 
 	"hecc-blot/contract/db"
+	"hecc-blot/contract/log"
+	dbConf "hecc-blot/entity/config/db"
 	dbEnum "hecc-blot/enum/db"
+
+	"gorm.io/gorm"
 )
 
 type Factory struct {
@@ -28,8 +28,12 @@ func (f *Factory) Build(ctx context.Context, v ...dbEnum.Value) db.IDb {
 		panic(fmt.Sprintf("无效db类型:%v", v))
 	}
 
-	dbSvc.WithContext(ctx)
-	return dbSvc
+	// 通过 GetInstance() 获取 GORM 实例，创建独立副本
+	clone := &BaseDbSvc{
+		ctx: ctx,
+		db:  dbSvc.GetInstance().(*gorm.DB).WithContext(ctx),
+	}
+	return clone
 }
 
 func (f *Factory) SetDefault(t dbEnum.Value) {
