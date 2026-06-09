@@ -27,6 +27,7 @@ type IDb interface {
     Begin() IDb
     Commit() error
     Rollback()
+    GetInstance() any
 }
 ```
 
