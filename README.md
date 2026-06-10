@@ -114,6 +114,7 @@ func main() {
 | [缓存组件](docs/cache.md) | 本地缓存、Redis 缓存、过期清理、链路追踪集成 |
 | [链路追踪](docs/trace.md) | OpenTelemetry 集成、Span 操作、跨服务传递 |
 | [SSE 服务](docs/sse.md) | SSE 推送使用、路由注册、中间件复用、错误处理 |
+| [分页组件](docs/paginator.md) | offset/limit 分页与游标分页的使用 |
 
 ## 核心组件概览
 
@@ -218,6 +219,10 @@ func (t TimeSse) Serve(ctx *gin.Context) error {
 1. **依赖倒置**: 高层模块依赖抽象接口，而非具体实现
 2. **接口隔离**: 每个接口只定义单一职责
 3. **开闭原则**: 对扩展开放，对修改关闭
+
+## 路线图
+
+框架的优化规划，详见 [feature.md](feature.md)。
 
 ## 感谢
 
