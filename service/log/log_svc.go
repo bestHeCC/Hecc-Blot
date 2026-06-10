@@ -35,7 +35,7 @@ func (b LogSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 }
 
 func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Field {
-	var zapFields []zapcore.Field
+	zapFields := make([]zapcore.Field, 0, len(fields)+1)
 
 	if traceId != "" {
 		zapFields = append(zapFields, zap.String("traceId", traceId))

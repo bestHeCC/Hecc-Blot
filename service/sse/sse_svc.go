@@ -34,6 +34,7 @@ func (f *SseHandle) Get(apiPath string, sseInstance iCoreSse.ISse) {
 		c.Writer.Header().Set("Content-Type", "text/event-stream")
 		c.Writer.Header().Set("Cache-Control", "no-cache")
 		c.Writer.Header().Set("Connection", "keep-alive")
+		c.Writer.Flush()
 
 		if err := sseInstance.Serve(c); err != nil {
 			c.SSEvent("error", err.Error())

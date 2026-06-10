@@ -152,6 +152,7 @@ func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc i
 	gin.SetMode(mode)
 	app := gin.New()
 	app.Use(gin.Recovery())
+	app.Use(bodySizeLimit(config.BodySizeLimit)) // 10MB
 
 	apiHandle := &ApiHandle{
 		config:      config,
@@ -168,4 +169,15 @@ func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc i
 	}
 
 	return apiHandle
+}
+
+// bodySizeLimit 限制请求体大小，防止大 payload 攻击
+func bodySizeLimit(maxBytes int64) gin.HandlerFunc {
+	if maxBytes == 0 {
+		maxBytes = 10 << 20
+	}
+	return func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		c.Next()
+	}
 }
