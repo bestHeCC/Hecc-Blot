@@ -189,7 +189,7 @@ func (a ExampleRequest) GetMessages() entityApi.Messages {
 	}
 }
 
-// ExampleApi 定义Add接口
+// ExampleApi 定义接口
 type ExampleApi struct {
 	// 注意结构体内的字段需要保证顺序，注入的服务需要放在最前面，请求参数需要放在最后面
 	// 通过inject tag，注册路由时会自动注入对应服务
@@ -230,6 +230,7 @@ func (e ExampleApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	return data, nil
 }
 
+// ExampleSse 定义sse接口
 type ExampleSse struct {
 	LogSvc iCoreLog.ILog `inject:""`
 }

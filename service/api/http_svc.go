@@ -19,6 +19,7 @@ import (
 	coreError "hecc-blot/service/error"
 	"hecc-blot/service/ioc"
 	"hecc-blot/service/trace"
+	"hecc-blot/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -122,7 +123,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 
 			// 自动绑定参数，并进行校验
 			if err := c.ShouldBind(newInstance); err != nil {
-				f.responseSvc.Regular(c, nil, coreError.Newf(response.ValidateError, GetErrorMsg(api, err)))
+				f.responseSvc.Regular(c, nil, coreError.New(response.ValidateError, util.GetErrorMsg(api, err)))
 				return
 			}
 
