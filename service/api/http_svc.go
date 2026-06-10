@@ -61,9 +61,24 @@ func (f *ApiHandle) Post(apiPath string, apiInstance interface{}) {
 }
 
 func (f *ApiHandle) Listen() {
+	readTimeout := f.config.ReadTimeout
+	writeTimeout := f.config.WriteTimeout
+	idleTimeout := f.config.IdleTimeout
+	if readTimeout <= 0 {
+		readTimeout = 30
+	}
+	if writeTimeout <= 0 {
+		writeTimeout = 30
+	}
+	if idleTimeout <= 0 {
+		idleTimeout = 60
+	}
 	srv := &http.Server{
-		Addr:    ":" + f.config.Port,
-		Handler: f.engine,
+		Addr:         ":" + f.config.Port,
+		Handler:      f.engine,
+		ReadTimeout:  time.Duration(readTimeout) * time.Second,
+		WriteTimeout: time.Duration(writeTimeout) * time.Second,
+		IdleTimeout:  time.Duration(idleTimeout) * time.Second,
 	}
 
 	// 启动服务
@@ -92,22 +107,27 @@ func (f *ApiHandle) Listen() {
 }
 
 func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method string) {
-	// 注入api依赖项
+	// 注入api依赖项（仅注入共享的服务依赖，请求参数字段留空）
 	ioc.Inject(apiInstance)
 
-	if v, ok := apiInstance.(iCoreApi.IApi); ok {
-		handler := func(c *gin.Context) {
-			// 自动绑定参数，并进行校验
-			if err := c.ShouldBind(&v); err != nil {
-				f.responseSvc.Regular(c, nil, coreError.Newf(response.ValidateError, GetErrorMsg(v, err)))
+	if _, ok := apiInstance.(iCoreApi.IApi); ok {
+		// 缓存具体类型，避免每个请求都做类型断言
+		apiType := reflect.TypeOf(apiInstance).Elem()
 
+		handler := func(c *gin.Context) {
+			// 每个请求创建独立实例，避免并发请求共享写入
+			newInstance := reflect.New(apiType).Interface()
+			ioc.Inject(newInstance)
+			api := newInstance.(iCoreApi.IApi)
+
+			// 自动绑定参数，并进行校验
+			if err := c.ShouldBind(newInstance); err != nil {
+				f.responseSvc.Regular(c, nil, coreError.Newf(response.ValidateError, GetErrorMsg(api, err)))
 				return
 			}
 
-			resp, err := v.Call(c)
+			resp, err := api.Call(c)
 			f.responseSvc.Regular(c, resp, err)
-
-			return
 		}
 
 		switch method {
@@ -131,6 +151,7 @@ func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc i
 
 	gin.SetMode(mode)
 	app := gin.New()
+	app.Use(gin.Recovery())
 
 	apiHandle := &ApiHandle{
 		config:      config,
