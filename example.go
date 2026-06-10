@@ -23,6 +23,7 @@ import (
 	"hecc-blot/service/log"
 	"hecc-blot/service/sse"
 	"hecc-blot/service/trace"
+	"hecc-blot/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -121,6 +122,8 @@ func register(apiHandle iCoreApi.IApiHandle) {
 		// 自动校验参数，同时自动包装返回值
 		// 统一返回值为{code:200, message:"请求成功", data:{}}
 		apiHandle.Post("example/api", &ExampleApi{})
+		apiHandle.Post("example/page", &PageListApi{})
+		apiHandle.Post("example/cursor", &CursorListApi{})
 	}
 }
 
@@ -229,6 +232,73 @@ func (e ExampleApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 	// 此处只需要关注返回值，接口返回格式由iCoreApi.IResponse统一处理
 	return data, nil
 }
+
+// ========================== 分页 Demo ==========================
+
+// PageRequest offset 分页请求参数
+type PageRequest struct {
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+}
+
+// PageListApi offset/limit 分页示例
+type PageListApi struct {
+	DbFactory iCoreDb.IDbFactory `inject:""`
+	PageRequest
+}
+
+func (e PageListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+	opts := util.PageOpts{Page: e.Page, PageSize: e.PageSize}
+	mysqlDb := e.DbFactory.Build(ctx).Query(AccountModel{})
+
+	// 查总数
+	total, err := mysqlDb.Count()
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	// 查当前页
+	var list []AccountModel
+	offset := (opts.Page - 1) * opts.PageSize
+	err = mysqlDb.Order("id desc").Limit(opts.PageSize).Offset(offset).Find(&list)
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	return util.NewPage(list, total, opts), nil
+}
+
+// CursorRequest 游标分页请求参数
+type CursorRequest struct {
+	Cursor   int `json:"cursor"`
+	PageSize int `json:"pageSize"`
+}
+
+// CursorListApi 游标分页示例
+type CursorListApi struct {
+	DbFactory iCoreDb.IDbFactory `inject:""`
+	CursorRequest
+}
+
+func (e CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+	pageSize := e.PageSize
+	cursor := e.Cursor
+
+	mysqlDb := e.DbFactory.Build(ctx).Query(AccountModel{})
+
+	// 多查一条用于判断 hasMore
+	var list []AccountModel
+	err := mysqlDb.Where("id > ?", cursor).Order("id asc").Limit(pageSize + 1).Find(&list)
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	return util.NewCursor(list, pageSize, func(item *AccountModel) any {
+		return item.ID
+	}), nil
+}
+
+// ========================== SSE Demo ==========================
 
 // ExampleSse 定义sse接口
 type ExampleSse struct {
