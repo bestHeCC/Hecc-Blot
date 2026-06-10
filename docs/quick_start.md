@@ -19,6 +19,10 @@ server:
   env: dev
   name: Hecc-Blot
   enable_trace: true
+  read_timeout: 30
+  write_timeout: 30
+  idle_timeout: 60
+  body_size_limit: 10485760  # 10MB
 
 db:
   mysql:
@@ -289,3 +293,4 @@ go run main.go
 - [IOC 注入机制](ioc_injection.md)
 - [SSE 服务](sse.md)
 - [替换框架组件](component_replacement.md)
+- [分页组件](paginator.md)

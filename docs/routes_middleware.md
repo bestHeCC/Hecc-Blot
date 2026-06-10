@@ -217,27 +217,32 @@ func (a AddRequest) GetMessages() entityApi.Messages {
 
 ### 3. 校验流程
 
-框架在注册路由时自动进行参数校验：
+框架在注册路由时为每个请求创建独立 API 实例（避免并发数据竞争），然后进行参数校验：
 
 ```go
 func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method string) {
-    // 注入依赖
     ioc.Inject(apiInstance)
-    
-    if v, ok := apiInstance.(api.IApi); ok {
+
+    if _, ok := apiInstance.(api.IApi); ok {
+        // 缓存具体类型
+        apiType := reflect.TypeOf(apiInstance).Elem()
+
         handler := func(c *gin.Context) {
+            // 每个请求创建独立实例，避免并发共享写入
+            newInstance := reflect.New(apiType).Interface()
+            ioc.Inject(newInstance)
+            api := newInstance.(iCoreApi.IApi)
+
             // 自动绑定参数并校验
-            if err := c.ShouldBind(&v); err != nil {
-                f.responseSvc.Regular(c, nil, coreError.Newf(response.ValidateError, GetErrorMsg(v, err)))
+            if err := c.ShouldBind(newInstance); err != nil {
+                f.responseSvc.Regular(c, nil, coreError.New(response.ValidateError, GetErrorMsg(api, err)))
                 return
             }
-            
-            // 调用 API
-            resp, err := v.Call(c)
+
+            resp, err := api.Call(c)
             f.responseSvc.Regular(c, resp, err)
         }
-        
-        // 注册路由
+
         switch method {
         case http.MethodGet:
             f.engine.GET(apiPath, handler)
@@ -250,14 +255,15 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 
 ### 4. 校验器错误处理
 
-框架提供了统一的错误信息获取方法：
+框架提供了统一的错误信息获取方法，优先匹配自定义消息，兜底返回原始错误信息：
 
 ```go
 func GetErrorMsg(request interface{}, err error) string {
-    if _, ok := errors.AsType[validator.ValidationErrors](err); ok {
+    // 使用 AsType 返回值而非直接断言，正确处理被包裹的错误
+    validationErrors, ok := errors.AsType[validator.ValidationErrors](err)
+    if ok && len(validationErrors) > 0 {
         _, isValidator := request.(api.IValidator)
-        
-        for _, v := range err.(validator.ValidationErrors) {
+        for _, v := range validationErrors {
             // 如果实现了 IValidator 接口，使用自定义错误信息
             if isValidator {
                 if message, exist := request.(api.IValidator).GetMessages()[v.Field()+"."+v.Tag()]; exist {
@@ -267,7 +273,8 @@ func GetErrorMsg(request interface{}, err error) string {
             return v.Error()
         }
     }
-    return "Parameter error"
+    // 非 validator 错误（空 body、JSON 格式错误等）返回原始信息
+    return err.Error()
 }
 ```
 
@@ -301,27 +308,30 @@ var CodeMap = map[Value]string{
 
 ### 3. 响应服务实现
 
+使用 `sync.Pool` 复用响应对象，减少 GC 压力：
+
 ```go
-type ResponseSvc struct {
-    Code    response.Value `json:"code"`
-    Message string         `json:"message"`
-    Data    interface{}    `json:"data"`
+var responsePool = sync.Pool{
+    New: func() interface{} { return &ResponseSvc{} },
 }
 
-func (r ResponseSvc) Regular(ctx context.Context, data interface{}, err coreError.IError) {
+func (r *ResponseSvc) Regular(ctx context.Context, data interface{}, err coreError.IError) {
     g := ctx.(*gin.Context)
     code := response.Success
-    
+
     if err != nil {
         code = err.GetCode()
         data = err.GetData()
     }
-    
-    r.Code = code
-    r.Message = response.CodeMap[code]
-    r.Data = data
-    
-    g.JSON(http.StatusOK, r)
+
+    resp := responsePool.Get().(*ResponseSvc)
+    defer responsePool.Put(resp)
+
+    resp.Code = code
+    resp.Message = response.CodeMap[code]
+    resp.Data = data
+
+    g.JSON(http.StatusOK, resp)
 }
 ```
 
@@ -494,10 +504,24 @@ func (e ExampleSse) Serve(ctx *gin.Context) error {
 ```yaml
 server:
   port: "9500"
-  env: dev           # dev | test | product
-  name: Hecc-Blot    # 服务名称
-  enable_trace: true # 是否开启链路追踪
+  env: dev                 # dev | test | product
+  name: Hecc-Blot          # 服务名称
+  enable_trace: true       # 是否开启链路追踪
+  read_timeout: 30         # 读取超时（秒）
+  write_timeout: 30        # 写入超时（秒）
+  idle_timeout: 60         # 空闲超时（秒）
+  body_size_limit: 10485760  # 请求体大小限制（字节）
 ```
+
+### 内置中间件
+
+框架在创建 API 处理器时自动注册以下中间件：
+
+| 中间件 | 功能 |
+|--------|------|
+| `gin.Recovery()` | 捕获 handler panic，返回 500 而非进程崩溃 |
+| `bodySizeLimit` | 限制请求体大小，防止大 payload 攻击，默认 10MB |
+| `HttpTraceMiddleware` | 仅在 `config.Server.EnableTrace` 为 true 时启用，自动追踪每个 HTTP 请求 |
 
 ### 环境模式映射
 
@@ -542,9 +566,11 @@ server:
 
 1. **自动注入**: 注册时自动注入依赖服务
 2. **参数校验**: 自动绑定并校验请求参数
-3. **自定义错误**: 支持自定义校验错误信息
-4. **统一响应**: 自动包装返回值为统一格式
-5. **链式调用**: 支持中间件链式注册
+3. **自定义错误**: 支持自定义校验错误信息，非 validator 错误兜底返回原始消息
+4. **统一响应**: 自动包装返回值为统一格式，响应体对象池化减少 GC
+5. **并发安全**: 每个请求创建独立 API 实例，避免数据竞争
+6. **链式调用**: 支持中间件链式注册
+7. **内置保护**: 自动注册 Recovery（防 panic 崩溃）、Body 大小限制、请求超时控制
 
 核心优势：
 
@@ -552,4 +578,5 @@ server:
 - **统一规范**: 所有 API 遵循统一的请求和响应格式
 - **易于扩展**: 新增 API 只需定义结构体和实现 Call 方法
 - **类型安全**: 编译时检查接口实现
+- **生产就绪**: 内置超时控制、body 限制、panic 恢复等安全机制
 

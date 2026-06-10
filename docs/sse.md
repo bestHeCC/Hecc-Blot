@@ -102,11 +102,13 @@ func main() {
 
 ## SSE 响应头
 
-框架自动设置以下 SSE 响应头：
+框架自动设置以下 SSE 响应头，并立即 Flush 确保客户端及时识别流类型：
 
 - `Content-Type: text/event-stream`
 - `Cache-Control: no-cache`
 - `Connection: keep-alive`
+
+设置头后立即调用 `c.Writer.Flush()`，客户端无需等待第一个事件即可确认连接类型。
 
 ## 错误处理
 

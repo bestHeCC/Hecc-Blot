@@ -73,16 +73,20 @@ a.LogSvc.Info(ctx, "order created",
 
 ### TraceId 自动关联
 
-框架从 Context 中自动提取 TraceId，日志输出会自动包含 `traceId` 字段：
+框架从 Context 中自动提取 TraceId，日志输出会自动包含 `traceId` 和 `caller` 字段：
 
 ```json
 {
     "level": "info",
     "msg": "user login",
     "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "caller": "example.go:209",
     "user_id": 123
 }
 ```
+
+- `traceId`: 从 Context 自动提取，关联链路追踪
+- `caller`: Zap 自动记录调用日志的文件和行号
 
 ## SLS 日志
 

@@ -122,7 +122,7 @@ apiHandle.Listen()
 `HttpTraceMiddleware` 会自动执行以下操作：
 
 1. **链路上下文提取**：从请求头 `traceparent` 中提取分布式追踪上下文，实现跨服务链路关联
-2. **创建请求 Span**：为每个 HTTP 请求创建 `http.request-{path}` Span（包含请求路径）
+2. **创建请求 Span**：为每个 HTTP 请求创建 `http.request` Span，请求路径记录在 `http.url` 属性中
 3. **提取 Trace ID**：从 Span 中获取 Trace ID
 4. **响应头注入**：
    - `X-Trace-Id`: 当前请求的 Trace ID

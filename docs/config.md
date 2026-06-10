@@ -10,6 +10,10 @@ server:
   env: dev            # 运行环境：dev / test / product
   name: Hecc-Blot     # 服务名称
   enable_trace: true  # 是否开启链路追踪
+  read_timeout: 30    # 读取超时（秒），0 默认 30
+  write_timeout: 30   # 写入超时（秒），0 默认 30
+  idle_timeout: 60    # 空闲超时（秒），0 默认 60
+  body_size_limit: 10485760  # 请求体大小限制（字节），0 默认 10MB
 
 db:
   mysql:
@@ -81,6 +85,10 @@ trace:
 | `env` | string | 是 | 运行环境，映射到 Gin 模式 |
 | `name` | string | 否 | 服务名称 |
 | `enable_trace` | bool | 否 | 是否开启 HTTP 链路追踪中间件 |
+| `read_timeout` | int | 否 | 读取请求超时（秒），0 默认 30 |
+| `write_timeout` | int | 否 | 写入响应超时（秒），0 默认 30 |
+| `idle_timeout` | int | 否 | 空闲连接超时（秒），0 默认 60 |
+| `body_size_limit` | int | 否 | 请求体最大字节数，0 默认 10MB |
 
 env 映射关系：
 
