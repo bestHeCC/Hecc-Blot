@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	iCoreApi "hecc-blot/contract/api"
@@ -9,6 +10,7 @@ import (
 	iCoreDb "hecc-blot/contract/db"
 	iCoreError "hecc-blot/contract/error"
 	iCoreLog "hecc-blot/contract/log"
+	iCoreSse "hecc-blot/contract/sse"
 	iCoreTrace "hecc-blot/contract/trace"
 	entityApi "hecc-blot/entity/api"
 	coreConfig "hecc-blot/entity/config"
@@ -22,6 +24,7 @@ import (
 	"hecc-blot/service/log"
 	"hecc-blot/service/sse"
 	"hecc-blot/service/trace"
+	"hecc-blot/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -403,4 +406,197 @@ func (a CacheReadThroughApi) Call(ctx *gin.Context) (interface{}, iCoreError.IEr
 	_ = a.CacheFactory.Redis().Set(ctx, cacheKey, account, 10*time.Minute)
 
 	return account, nil
+}
+
+// ===== 9. 链路追踪 =====
+// 演示：FromContext / SetAttribute / RecordError / Start 子 Span / defer span.End()
+// 详见：docs/trace.md
+
+// TraceDemoApi 链路追踪示例
+type TraceDemoApi struct {
+	TraceSvc iCoreTrace.ITrace `inject:""`
+	LogSvc   iCoreLog.ILog     `inject:""`
+}
+
+func (a TraceDemoApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+	// 1. 从 Context 获取当前请求的 Span（由 HttpTraceMiddleware 自动创建）
+	currentSpan := a.TraceSvc.FromContext(ctx)
+
+	// 2. 为当前 Span 添加自定义属性
+	currentSpan.SetAttribute("business.type", "trace_demo")
+	currentSpan.SetAttribute("user.id", 12345)
+
+	// 3. 开启子 Span 追踪数据库操作
+	subCtx, subSpan := a.TraceSvc.Start(ctx, "db-slow-query",
+		"db.table", "account",
+		"db.operation", "find",
+	)
+	defer subSpan.End()
+
+	// 模拟耗时操作
+	time.Sleep(10 * time.Millisecond)
+
+	// 4. 模拟出错时记录错误到 Span
+	if false { // 实际业务中将条件替换为 err != nil
+		subSpan.RecordError(fmt.Errorf("模拟数据库错误"))
+	}
+
+	a.LogSvc.Info(subCtx, "trace demo completed", "span", subSpan.Name())
+	return "trace demo ok", nil
+}
+
+// ===== 10. 分页 =====
+// 演示：Offset/limit 分页（NewPage）+ 游标分页（NewCursor）
+// 详见：docs/paginator.md
+
+// PageRequest offset 分页请求参数
+type PageRequest struct {
+	Page     int `json:"page" binding:"min=1"`
+	PageSize int `json:"pageSize" binding:"min=1,max=100"`
+}
+
+// PageListApi offset/limit 分页示例
+type PageListApi struct {
+	DbFactory iCoreDb.IDbFactory `inject:""`
+	PageRequest
+}
+
+func (a PageListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+	opts := util.PageOpts{Page: a.Page, PageSize: a.PageSize}
+	db := a.DbFactory.Build(ctx).Query(AccountModel{})
+
+	total, err := db.Count()
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	var list []AccountModel
+	offset := (opts.Page - 1) * opts.PageSize
+	if err = db.Order("id DESC").Limit(opts.PageSize).Offset(offset).Find(&list); err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	// NewPage 自动处理 nil → []、默认 page/pageSize
+	return util.NewPage(list, total, opts), nil
+}
+
+// CursorRequest 游标分页请求参数
+type CursorRequest struct {
+	Cursor   int `json:"cursor"`
+	PageSize int `json:"pageSize" binding:"min=1,max=100"`
+}
+
+// CursorListApi 游标分页示例
+type CursorListApi struct {
+	DbFactory iCoreDb.IDbFactory `inject:""`
+	CursorRequest
+}
+
+func (a CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
+	db := a.DbFactory.Build(ctx).Query(AccountModel{})
+
+	// 多查一条用于判断 hasMore
+	var list []AccountModel
+	err := db.Where("id > ?", a.Cursor).Order("id ASC").Limit(a.PageSize + 1).Find(&list)
+	if err != nil {
+		return nil, errorSvc.NewError(response.Fail, err)
+	}
+
+	// NewCursor 自动判断 hasMore 并截断多余数据
+	// func(item *AccountModel) any 提取游标值（这里用 ID 作为游标）
+	return util.NewCursor(list, a.PageSize, func(item *AccountModel) any {
+		return item.ID
+	}), nil
+}
+
+// ===== 11. SSE 推送 =====
+// 演示：ISse 接口、心跳保活、http.Flusher 断言保护
+// 详见：docs/sse.md
+
+// ExampleSse SSE 实时推送示例
+type ExampleSse struct {
+	LogSvc iCoreLog.ILog `inject:""`
+}
+
+func (e ExampleSse) Serve(ctx *gin.Context) error {
+	e.LogSvc.Info(ctx, "sse connection established")
+
+	// 1. 断言 Writer 支持 http.Flusher（防止被中间件包装后 panic）
+	flusher, ok := ctx.Writer.(http.Flusher)
+	if !ok {
+		return fmt.Errorf("ResponseWriter does not support http.Flusher")
+	}
+	// 提示：生产环境应检查 Accept: text/event-stream 头，缺少时返回 406
+
+	clientCtx := ctx.Request.Context()
+
+	// 2. 心跳 goroutine — 每 30s 发 SSE comment，防止连接空闲断开
+	heartbeat := time.NewTicker(30 * time.Second)
+	defer heartbeat.Stop()
+
+	// 3. 业务推送 — 每秒推送服务器时间
+	business := time.NewTicker(1 * time.Second)
+	defer business.Stop()
+
+	for {
+		select {
+		case <-clientCtx.Done():
+			// 客户端断开
+			e.LogSvc.Info(ctx, "sse client disconnected")
+			return nil
+		case <-heartbeat.C:
+			// 心跳帧：SSE comment，客户端静默忽略
+			if _, err := ctx.Writer.WriteString(": heartbeat\n\n"); err != nil {
+				return err
+			}
+			flusher.Flush()
+		case <-business.C:
+			msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
+			if _, err := ctx.Writer.WriteString(msg); err != nil {
+				return err
+			}
+			flusher.Flush()
+		}
+	}
+}
+
+// ==============================
+// 路由注册（集中管理）
+// ==============================
+
+func registerRoutes(apiHandle iCoreApi.IApiHandle) {
+	// 全局中间件 — Middleware() 方法自动完成依赖注入
+	apiHandle.Middleware(&TokenMiddleware{})
+
+	{
+		// — Section 4: 参数校验 —
+		apiHandle.Post("account/add", &AddAccountApi{})
+
+		// — Section 6: 数据库 CRUD —
+		apiHandle.Get("account/take", &TakeAccountApi{})
+		apiHandle.Get("account/find", &FindAccountApi{})
+		apiHandle.Get("account/count", &CountAccountApi{})
+		apiHandle.Post("account/update", &UpdateAccountApi{})
+		apiHandle.Post("account/delete", &DeleteAccountApi{})
+
+		// — Section 7: 多数据库切换 —
+		apiHandle.Get("account/db-switch", &DbSwitchApi{})
+
+		// — Section 8: 缓存操作 —
+		apiHandle.Get("cache/basic", &CacheBasicApi{})
+		apiHandle.Get("cache/hash", &CacheHashApi{})
+		apiHandle.Get("cache/read-through", &CacheReadThroughApi{})
+
+		// — Section 9: 链路追踪 —
+		apiHandle.Get("trace/demo", &TraceDemoApi{})
+
+		// — Section 10: 分页 —
+		apiHandle.Post("account/page", &PageListApi{})
+		apiHandle.Post("account/cursor", &CursorListApi{})
+	}
+}
+
+func registerSseRoutes(sseHandle iCoreSse.ISseHandle) {
+	// — Section 11: SSE 推送 —
+	sseHandle.Get("events/time", &ExampleSse{})
 }
