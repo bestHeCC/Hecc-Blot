@@ -255,99 +255,17 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
 
 ### 4. 校验器错误处理
 
-框架提供了统一的错误信息获取方法，优先匹配自定义消息，兜底返回原始错误信息：
+框架通过 `util.GetErrorMsg()` 获取校验错误消息，支持三级兜底：自定义消息 → validator 默认 → 原始 error。
 
-```go
-func GetErrorMsg(request interface{}, err error) string {
-    // 使用 AsType 返回值而非直接断言，正确处理被包裹的错误
-    validationErrors, ok := errors.AsType[validator.ValidationErrors](err)
-    if ok && len(validationErrors) > 0 {
-        _, isValidator := request.(api.IValidator)
-        for _, v := range validationErrors {
-            // 如果实现了 IValidator 接口，使用自定义错误信息
-            if isValidator {
-                if message, exist := request.(api.IValidator).GetMessages()[v.Field()+"."+v.Tag()]; exist {
-                    return message
-                }
-            }
-            return v.Error()
-        }
-    }
-    // 非 validator 错误（空 body、JSON 格式错误等）返回原始信息
-    return err.Error()
-}
-```
+详见 [参数校验](validator.md)。
 
 ***
 
 ## 返回值自动包装
 
-### 1. 响应格式
+框架自动将 API 返回值包装为 `{code, message, data}` 统一格式。成功时返回 `code: 10000`，失败时根据 `IError.GetCode()` 映射对应响应码。
 
-框架统一返回格式：
-
-```json
-{
-    "code": 200,
-    "message": "请求成功",
-    "data": {}
-}
-```
-
-### 2. 响应码映射
-
-```go
-var CodeMap = map[Value]string{
-    Success:        "请求成功",
-    Fail:           "操作失败",
-    ValidateError:  "参数校验失败",
-    TokenInvalid:   "Token无效",
-    // ... 更多响应码
-}
-```
-
-### 3. 响应服务实现
-
-使用 `sync.Pool` 复用响应对象，减少 GC 压力：
-
-```go
-var responsePool = sync.Pool{
-    New: func() interface{} { return &ResponseSvc{} },
-}
-
-func (r *ResponseSvc) Regular(ctx context.Context, data interface{}, err coreError.IError) {
-    g := ctx.(*gin.Context)
-    code := response.Success
-
-    if err != nil {
-        code = err.GetCode()
-        data = err.GetData()
-    }
-
-    resp := responsePool.Get().(*ResponseSvc)
-    defer responsePool.Put(resp)
-
-    resp.Code = code
-    resp.Message = response.CodeMap[code]
-    resp.Data = data
-
-    g.JSON(http.StatusOK, resp)
-}
-```
-
-### 4. 使用示例
-
-```go
-func (a AddApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-    // 成功返回
-    return newAccount, nil
-    // 返回: {"code":200, "message":"请求成功", "data":{"id":1, "name":"test"}}
-    
-    // 失败返回
-    return nil, errorSvc.NewError(response.Fail, errors.New("添加失败"))
-    // 返回: {"code":500, "message":"操作失败", "data":"添加失败"}
-}
-```
+详见 [统一错误与响应](error_response.md)。
 
 ***
 
@@ -411,89 +329,7 @@ func register(apiHandle iCoreApi.IApiHandle) {
 
 ## SSE 路由注册
 
-### SSE 处理器接口
-
-```go
-type ISseHandle interface {
-    Get(apiPath string, sse ISse)
-    Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
-}
-```
-
-SSE 复用 `iCoreApi.IMiddleware` 接口，无需单独定义中间件类型。
-
-### 创建 SSE 处理器
-
-SSE 与 API 共享同一 Gin Engine，创建时传入 API 的 Engine：
-
-```go
-// 创建 SSE 处理器，共享 API 的 Engine
-sseHandle := sse.NewSseSvc(apiHandle.Engine())
-```
-
-### 注册 SSE 路由
-
-```go
-func registerSse(sseHandle iCoreSse.ISseHandle) {
-    sseHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
-    {
-        sseHandle.Get("example/sse", &ExampleSse{})
-    }
-}
-```
-
-### SSE 端点定义
-
-实现 `ISse` 接口，通过 `Serve` 方法处理长连接：
-
-```go
-type ExampleSse struct {
-    LogSvc iCoreLog.ILog `inject:""`
-}
-
-func (e ExampleSse) Serve(ctx *gin.Context) error {
-    e.LogSvc.Info(ctx, "sse start")
-
-    writer := ctx.Writer
-    clientCtx := ctx.Request.Context()
-
-    ticker := time.NewTicker(1 * time.Second)
-    defer ticker.Stop()
-
-    for {
-        select {
-        case <-clientCtx.Done():
-            return nil
-        case <-ticker.C:
-            msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
-            if _, err := writer.WriteString(msg); err != nil {
-                return err
-            }
-            writer.Flush()
-        }
-    }
-}
-```
-
-### SSE 请求处理流程
-
-```
-请求 → [中间件链] → [设置SSE响应头] → [Serve()] → [持续推送事件]
-                                                 ↓
-                                         客户端断开 / Serve 返回 error
-                                                 ↓
-                                         发送 error SSE 事件 → 结束
-```
-
-框架自动设置 SSE 响应头（`Content-Type: text/event-stream`、`Cache-Control: no-cache`、`Connection: keep-alive`）。
-
-### 注意事项
-
-- **共享端口**: SSE 与 API 共用同一 Engine，只需调用 `apiHandle.Listen()` 一次
-- **长连接**: Serve 方法需监听 `ctx.Request.Context().Done()` 感知客户端断开
-- **流刷新**: 每次 `Write` 后需立即 `writer.Flush()`
-- **错误处理**: Serve 返回 error 时，框架通过 `c.SSEvent("error", ...)` 发送，不会尝试修改 HTTP 状态码
-- **中间件复用**: SSE 与 API 共用 `IMiddleware`，注册中间件的方式完全一致
+SSE（Server-Sent Events）与 API 共享 Gin Engine 和 IMiddleware 接口。详细用法见 [SSE 服务文档](sse.md)。
 
 ***
 
