@@ -78,6 +78,37 @@ func registerSse(sseHandle iCoreSse.ISseHandle) {
 }
 ```
 
+### 路由注册原理
+
+SSE 处理器接口定义在 `contract/sse/sse_handler.go`：
+
+```go
+type ISseHandle interface {
+    Get(apiPath string, sse ISse)
+    Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
+}
+```
+
+框架自动设置 SSE 响应头（`Content-Type: text/event-stream`、`Cache-Control: no-cache`、`Connection: keep-alive`），设置后立即 Flush 确保客户端及时识别流类型。
+
+**请求处理流程：**
+
+```
+请求 → [中间件链] → [设置SSE响应头] → [Serve()] → [持续推送事件]
+                                                 ↓
+                                         客户端断开 / Serve 返回 error
+                                                 ↓
+                                         发送 error SSE 事件 → 结束
+```
+
+**注意事项：**
+
+- **共享端口**: SSE 与 API 共用同一 Engine，只需调用 `apiHandle.Listen()` 一次
+- **长连接**: Serve 方法需监听 `ctx.Request.Context().Done()` 感知客户端断开
+- **流刷新**: 每次 `Write` 后需立即 `writer.Flush()`
+- **中间件复用**: SSE 与 API 共用 `IMiddleware`，注册方式完全一致
+- **错误处理**: Serve 返回 error 时，框架通过 `c.SSEvent("error", ...)` 发送，不修改 HTTP 状态码
+
 ## 完整示例
 
 ```go
