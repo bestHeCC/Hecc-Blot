@@ -154,27 +154,27 @@ func newXormDbSvc(config *dbConf.MysqlConfig, logger log.ILog) (db.IDb, func(), 
 
 // 实现 IDb 接口方法
 func (x *XormDbSvc) Add(entry db.IDbModel) error {
-    ...
+    // 使用 x.engine 执行插入操作
     return err
 }
 
 func (x *XormDbSvc) Remove(entry db.IDbModel) error {
-    ...
+    // 使用 x.engine 执行删除操作
     return err
 }
 
 func (x *XormDbSvc) Query(entry db.IDbModel) db.IDb {
-    ...
+    // 使用 x.engine 构建查询链
     return x
 }
 
 func (x *XormDbSvc) Take(dst interface{}) error {
-    ...
+    // 使用 x.engine 执行单条查询
     return err
 }
 
 func (x *XormDbSvc) Find(dst interface{}) error {
-    ...
+    // 使用 x.engine 执行多条查询
     return err
 }
 
