@@ -282,6 +282,24 @@ go run main.go
 }
 ```
 
+## 示例代码导航
+
+完整的 [`example.go`](../example.go) 按模块分为 11 节，覆盖框架全部功能：
+
+| # | 章节 | 演示内容 | 详文 |
+|---|------|----------|------|
+| 1 | 启动入口 | main() 骨架 | [快速开始](quick_start.md) |
+| 2 | 配置加载 | viper 读取 config.yaml | [配置说明](config.md) |
+| 3 | Model 定义 | IDbModel、TableName、多 Model | [数据库组件](database.md) |
+| 4 | 请求参数与校验 | binding tag、GetMessages() | [路由与中间件](routes_middleware.md) |
+| 5 | 中间件 | Authorization 校验、inject | [路由与中间件](routes_middleware.md) |
+| 6 | 数据库 CRUD | Add/Take/Find/Save/Remove/Count/事务 | [数据库组件](database.md) |
+| 7 | 多数据库切换 | MySQL ↔ PostgreSQL | [数据库组件](database.md) |
+| 8 | 缓存操作 | Local/Redis 读写删/Hash/读穿透 | [缓存组件](cache.md) |
+| 9 | 链路追踪 | Span/SetAttribute/子 Span | [链路追踪](trace.md) |
+| 10 | 分页 | Offset 分页 + 游标分页 | [分页组件](paginator.md) |
+| 11 | SSE 推送 | ISse 接口、心跳、Flusher | [SSE 服务](sse.md) |
+
 ## 下一步
 
 - [配置项完整参考](config.md)
