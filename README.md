@@ -22,41 +22,11 @@ Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口
 
 ## 快速开始
 
+完整可运行示例见 [`example.go`](example.go)，按模块分节覆盖了框架全部功能。
+
 ```bash
 go mod tidy
 ```
-
-创建 `config.yaml`，参考 [配置说明](docs/config.md)。
-
-```go
-func main() {
-    config, _ := initConf("/config.yaml")
-
-    logSvc, _ := log.NewLogger(&config.Log)
-    traceSvc, _ := trace.NewTraceSvc(&config.Trace)
-    dbFactory, clearUp, _ := db.NewDbFactory(&config.Db, logSvc)
-    cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
-    responseSvc := api.NewResponseSvc()
-
-    ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
-    ioc.Set(new(iCoreLog.ILog), logSvc)
-    ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
-    ioc.Set(new(iCoreApi.IResponse), responseSvc)
-    ioc.Set(new(iCoreTrace.ITrace), traceSvc)
-
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
-    apiHandle.Middleware(&TokenMiddleware{})
-    apiHandle.Post("account/add", &AddApi{})
-
-    sseHandle := sse.NewSseSvc(apiHandle.Engine())
-    sseHandle.Middleware(&TokenMiddleware{})
-    sseHandle.Get("events/time", &TimeSse{})
-
-    apiHandle.Listen()
-}
-```
-
-完整教程见 [快速开始指南](docs/quick_start.md)。
 
 ## 目录结构
 
@@ -89,6 +59,24 @@ func main() {
 ```
 
 ## 文档索引
+
+## 示例代码导航
+
+`example.go` 按模块分为 11 节，可作为框架功能的活文档使用：
+
+| # | 章节 | 演示内容 | 详文 |
+|---|------|----------|------|
+| 1 | 启动入口 | main() 骨架：初始化→IOC→路由→启动 | [快速开始](docs/quick_start.md) |
+| 2 | 配置加载 | viper 读取 config.yaml | [配置说明](docs/config.md) |
+| 3 | Model 定义 | IDbModel 接口、TableName、多 Model | [数据库组件](docs/database.md) |
+| 4 | 请求参数与校验 | binding tag、GetMessages() | [路由与中间件](docs/routes_middleware.md) |
+| 5 | 中间件 | Authorization 校验、inject 注入 | [路由与中间件](docs/routes_middleware.md) |
+| 6 | 数据库 CRUD | Add/Take/Find/Save/Remove/Count/事务 | [数据库组件](docs/database.md) |
+| 7 | 多数据库切换 | MySQL ↔ PostgreSQL 切换 | [数据库组件](docs/database.md) |
+| 8 | 缓存操作 | Local/Redis 读写删、Hash、读穿透 | [缓存组件](docs/cache.md) |
+| 9 | 链路追踪 | Span/SetAttribute/RecordError/子Span | [链路追踪](docs/trace.md) |
+| 10 | 分页 | Offset 分页 + 游标分页 | [分页组件](docs/paginator.md) |
+| 11 | SSE 推送 | ISse 接口、心跳、Flusher 断言 | [SSE 服务](docs/sse.md) |
 
 ### 入门
 
