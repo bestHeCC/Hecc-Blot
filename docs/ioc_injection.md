@@ -113,44 +113,7 @@ func Inject(instance interface{}) {
 
 ### 2. 核心注入逻辑
 
-```go
-func inject(instanceValue reflect.Value) {
-    if instanceValue.Kind() == reflect.Ptr {
-        instanceValue = instanceValue.Elem()
-    }
-    
-    instanceType := instanceValue.Type()
-    for j := 0; j < instanceType.NumField(); j++ {
-        field := instanceValue.Type().Field(j)
-        fieldValue := instanceValue.FieldByIndex(field.Index)
-        
-        // 处理匿名嵌套结构体
-        if field.Anonymous {
-            if field.Type.Kind() == reflect.Struct {
-                inject(fieldValue)
-            }
-            continue
-        }
-        
-        // 查找 inject tag
-        name, ok := field.Tag.Lookup("inject")
-        if !ok {
-            return  // 没有 inject tag，停止注入（约定：注入字段必须放在前面）
-        }
-        
-        // 如果字段是指针类型，先创建实例
-        if fieldValue.Kind() == reflect.Ptr {
-            value := reflect.New(field.Type.Elem())
-            fieldValue.Set(value)
-            fieldValue = fieldValue.Elem()
-        }
-        
-        // 从容器获取实例并设置
-        v := getValueWithName(field.Type, name)
-        fieldValue.Set(v)
-    }
-}
-```
+注入时框架遍历结构体字段，查找 `inject` tag，根据字段类型和名称从容器中获取对应实例并赋值。遇到没有 `inject` tag 的字段时停止注入（因此注入字段必须排在请求参数前面）。
 
 ***
 
@@ -321,62 +284,11 @@ type MyApi struct {
 
 ## 单测示例
 
-查看 `service/ioc/iocSvc_test.go` 了解 IOC 的测试方式：
-
-```go
-func TestIocSvc(t *testing.T) {
-    // 注册实例
-    Set(new(iInterface), derive{})
-    SetWithName(new(iInterface), "custom", derive{})
-    
-    // 测试默认注入
-    t.Run("default", func(t *testing.T) {
-        var d1 defaultTest
-        Inject(&d1)
-        assert.Equal(t, "set test", d1.One.Test())
-    })
-    
-    // 测试命名注入
-    t.Run("custom", func(t *testing.T) {
-        var d2 customTest
-        Inject(&d2)
-        assert.Equal(t, "set test", d2.One.Test())
-    })
-}
-```
+IOC 容器的单元测试见 `service/ioc/ioc_svc_test.go`，演示了 `Set`、`SetWithName`、`Inject` 的标准用法和验证方式。
 
 ***
 
 ## IOC 工作流程图
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        IOC 工作流程                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                            │
-│  1. 注册阶段                                                │
-│     ┌─────────────┐    Set()    ┌──────────────────┐       │
-│     │ 创建实例     │ ──────────→ │ 存入 IOC 容器     │       │
-│     │ logSvc      │             │ interfaceType    │       │
-│     │ dbFactory   │             │ → instance       │       │
-│     └─────────────┘             └──────────────────┘       │
-│                                                            │
-│  2. 注入阶段                                                │
-│     ┌─────────────┐   Inject()  ┌──────────────────┐       │
-│     │ API 结构体   │ ──────────→ │ 遍历字段         │       │
-│     │ AddApi      │             │ 查找 inject tag  │       │
-│     └─────────────┘             │ 从容器获取实例    │       │
-│                                 │ 设置字段值        │       │
-│                                 └──────────────────┘       │
-│                                                            │
-│  3. 使用阶段                                                │
-│     ┌─────────────┐             ┌──────────────────┐       │
-│     │ a.LogSvc    │ ←───────── │ 自动注入完成      │       │
-│     │ .Info(...)  │             │ 可直接使用       │       │
-│     └─────────────┘             └──────────────────┘       │
-│                                                            │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ***
 
