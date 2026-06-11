@@ -2,337 +2,151 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-	"time"
 
 	iCoreApi "hecc-blot/contract/api"
 	iCoreCache "hecc-blot/contract/cache"
 	iCoreDb "hecc-blot/contract/db"
-	iCoreError "hecc-blot/contract/error"
 	iCoreLog "hecc-blot/contract/log"
-	iCoreSse "hecc-blot/contract/sse"
+	iCoreTrace "hecc-blot/contract/trace"
 	entityApi "hecc-blot/entity/api"
 	coreConfig "hecc-blot/entity/config"
-	"hecc-blot/enum/response"
 	"hecc-blot/service/api"
 	"hecc-blot/service/cache"
 	"hecc-blot/service/db"
-	errorSvc "hecc-blot/service/error"
 	"hecc-blot/service/ioc"
 	"hecc-blot/service/log"
 	"hecc-blot/service/sse"
 	"hecc-blot/service/trace"
-	"hecc-blot/util"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"gorm.io/plugin/soft_delete"
 )
 
+// ===== 1. 启动入口 =====
+// 演示：框架初始化全流程 — 配置 → 日志 → 追踪 → 数据库 → 缓存 → IOC → 路由 → 启动
+// 详见：docs/quick_start.md
+
 func main() {
-	// 用于收集所有出现的错误
-	var allErrors []error
+	config := initConf("/config.yaml")
 
-	// 加载配置
-	config, err := initConf("/config.yaml")
-	if err != nil {
-		allErrors = append(allErrors, err)
-	}
-
-	traceSvc, traceClearUp, err := trace.NewTraceSvc(&config.Trace)
-	if err != nil {
-		allErrors = append(allErrors, err)
-	}
-
-	logSvc, err := log.NewLogger(&config.Log)
-	if err != nil {
-		allErrors = append(allErrors, err)
-	}
-
-	dbFactory, dbClearUp, err := db.NewDbFactory(&config.Db, logSvc)
-	if err != nil {
-		allErrors = append(allErrors, err)
-	}
+	logSvc := must(log.NewLogger(&config.Log))
+	traceSvc, traceClearUp := must2(trace.NewTraceSvc(&config.Trace))
+	dbFactory, dbClearUp := must2(db.NewDbFactory(&config.Db, logSvc))
 
 	cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
 	responseSvc := api.NewResponseSvc()
 
-	// 如果有任何错误发生，统一进行处理
-	if len(allErrors) > 0 {
-		panic(fmt.Errorf("以下错误发生：%v", allErrors))
-	}
-
+	// defer 注册退出清理（LIFO 顺序执行）
+	defer dbClearUp()
+	defer traceClearUp()
 	defer func() {
-		if dbFactory != nil {
-			dbClearUp()
-		}
-		if traceSvc != nil {
-			traceClearUp()
-		}
 		if cacheFactory.Redis() != nil {
-			cacheFactory.Redis().Close()
+			_ = cacheFactory.Redis().Close()
 		}
 	}()
 
-	// 注册至ioc容器
+	// 注册到 IOC 容器（顺序无关，但必须在路由注册之前）
 	ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
 	ioc.Set(new(iCoreLog.ILog), logSvc)
 	ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
 	ioc.Set(new(iCoreApi.IResponse), responseSvc)
+	ioc.Set(new(iCoreTrace.ITrace), traceSvc)
 
 	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
-	register(apiHandle)
+	registerRoutes(apiHandle)
 
 	sseHandle := sse.NewSseSvc(apiHandle.Engine())
-	registerSse(sseHandle)
+	registerSseRoutes(sseHandle)
 
 	apiHandle.Listen()
 }
 
-// initConf 加载统一配置
-func initConf(configPath string) (*coreConfig.Config, error) {
-	var config *coreConfig.Config
+// must 单返回值错误处理：出错直接 panic
+func must[T any](val T, err error) T {
+	if err != nil {
+		panic(fmt.Errorf("初始化失败: %w", err))
+	}
+	return val
+}
 
-	wd, _ := os.Getwd()
-	configPath = fmt.Sprintf("%s%s", wd, configPath)
+// must2 双返回值错误处理：出错直接 panic
+func must2[T, U any](val T, cleanup U, err error) (T, U) {
+	if err != nil {
+		panic(fmt.Errorf("初始化失败: %w", err))
+	}
+	return val, cleanup
+}
 
+// ===== 2. 配置加载 =====
+// 演示：使用 viper 读取 config.yaml，反序列化为 config.Config 结构体
+// 详见：docs/config.md
+
+func initConf(configPath string) *coreConfig.Config {
 	v := viper.New()
 	v.SetConfigFile(configPath)
-	err := v.ReadInConfig()
-	if err != nil {
-		return nil, err
+	if err := v.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("读取配置文件失败: %w", err))
 	}
-
-	// 加载配置
-	if err = v.Unmarshal(&config); err != nil {
-		return nil, err
+	var conf coreConfig.Config
+	if err := v.Unmarshal(&conf); err != nil {
+		panic(fmt.Errorf("解析配置文件失败: %w", err))
 	}
-	fmt.Println(fmt.Sprintf("\x1b[0;%dm%s\x1b[0m", 34, fmt.Sprintf("加载配置成功，配置是%+v", config)))
-
-	return config, nil
+	return &conf
 }
 
-// register 注册api
-func register(apiHandle iCoreApi.IApiHandle) {
-	// iCoreApi.IApiHandle的Middleware方法，完成自动注入
-	apiHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
-	{
-		// iCoreApi.IApiHandle的Post方法（Get方法同理），完成自动注入
-		// 自动校验参数，同时自动包装返回值
-		// 统一返回值为{code:200, message:"请求成功", data:{}}
-		apiHandle.Post("example/api", &ExampleApi{})
-		apiHandle.Post("example/page", &PageListApi{})
-		apiHandle.Post("example/cursor", &CursorListApi{})
-	}
-}
+// ===== 3. Model 定义 =====
+// 演示：实现 IDbModel 接口（GetID），定义表名（TableName），支持多 Model
+// 详见：docs/database.md
 
-func registerSse(sseHandle iCoreSse.ISseHandle) {
-	sseHandle.Get("example/sse", &ExampleSse{})
-}
-
-// ReplayMiddleware 定义Replay中间件
-type ReplayMiddleware struct {
-	CacheFactory iCoreCache.ICacheFactory
-}
-
-func (r ReplayMiddleware) Middleware() interface{} {
-	return func(c *gin.Context) {
-		c.Next()
-	}
-}
-
-// TokenMiddleware 定义Token中间件
-type TokenMiddleware struct {
-	ResponseSvc iCoreApi.IResponse `inject:""`
-}
-
-func (t TokenMiddleware) Middleware() interface{} {
-	return func(c *gin.Context) {
-		// 从请求头中获取id
-		u, err := strconv.ParseUint(c.GetHeader("id"), 10, 64) // 以10进制解析为int64
-		if err != nil {
-			t.ResponseSvc.Regular(c, nil, errorSvc.NewError(response.TokenInvalid, err))
-			c.Abort()
-		}
-
-		c.Set("id", u)
-		c.Next()
-	}
-}
-
-// AccountModel 定义model
+// AccountModel 账户模型
 type AccountModel struct {
 	ID          int                   `json:"id" gorm:"primaryKey"`
 	AccountName string                `json:"account_name"`
 	Password    string                `json:"password"`
+	Email       string                `json:"email"`
+	Balance     float64               `json:"balance"`
 	CreatedAt   int64                 `json:"created_at"`
 	UpdatedAt   int64                 `json:"updated_at"`
 	DeletedAt   soft_delete.DeletedAt `json:"deleted_at"`
 }
 
-func (b AccountModel) TableName() string {
-	return "account"
+func (a AccountModel) TableName() string { return "account" }
+
+func (a AccountModel) GetID() int { return a.ID }
+
+// OrderModel 订单模型 — 演示多 Model 场景
+type OrderModel struct {
+	ID        int     `json:"id" gorm:"primaryKey"`
+	AccountID int     `json:"account_id"`
+	Product   string  `json:"product"`
+	Amount    float64 `json:"amount"`
+	CreatedAt int64   `json:"created_at"`
 }
 
-// GetID model需要实现iCoreDb.IModel接口
-func (b AccountModel) GetID() int {
-	return b.ID
+func (o OrderModel) TableName() string { return "order" }
+
+func (o OrderModel) GetID() int { return o.ID }
+
+// ===== 4. 请求参数与校验 =====
+// 演示：binding tag 自动校验（required/min/max/email）、自定义错误信息 GetMessages()
+// 详见：docs/routes_middleware.md
+
+// AddAccountRequest 新增账户 — 展示多种校验规则
+type AddAccountRequest struct {
+	AccountName string `json:"account_name" binding:"required"`
+	Password    string `json:"password" binding:"required,min=6"`
+	Email       string `json:"email" binding:"required,email"`
+	Age         int    `json:"age" binding:"min=1,max=150"`
 }
 
-// ExampleRequest 定义Add请求参数
-type ExampleRequest struct {
-	Name string `json:"name" binding:"required"`
-}
-
-// GetMessages 自定义错误信息
-func (a ExampleRequest) GetMessages() entityApi.Messages {
+func (a AddAccountRequest) GetMessages() entityApi.Messages {
 	return entityApi.Messages{
-		"Name.required": "名字不能为空",
-	}
-}
-
-// ExampleApi 定义接口
-type ExampleApi struct {
-	// 注意结构体内的字段需要保证顺序，注入的服务需要放在最前面，请求参数需要放在最后面
-	// 通过inject tag，注册路由时会自动注入对应服务
-	DbFactory    iCoreDb.IDbFactory       `inject:""`
-	LogSvc       iCoreLog.ILog            `inject:""`
-	CacheFactory iCoreCache.ICacheFactory `inject:""`
-
-	// 请求参数，注册路由时会自动绑定并校验
-	ExampleRequest
-}
-
-func (e ExampleApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-	data := AccountModel{
-		AccountName: "example",
-	}
-
-	e.LogSvc.Info(ctx, "log", "account", data)
-
-	// e.DbFactory.Build(ctx) 返回一个iCoreDb.IDb，用于操作数据库，默认使用mysql
-	mysqlSvc := e.DbFactory.Build(ctx)
-	// 开启事务
-	tx := mysqlSvc.Begin()
-	err := tx.Where("id = ?", 2).Add(&data)
-	if err != nil {
-		return nil, errorSvc.NewError(response.Fail, err)
-	}
-	// 提交事务
-	err = tx.Commit()
-	if err != nil {
-		return nil, errorSvc.NewError(response.Fail, err)
-	}
-
-	// 使用缓存
-	e.CacheFactory.Local().Set(ctx, "data", data, 10)
-	e.CacheFactory.Redis().Set(ctx, "data", data, -1)
-
-	// 此处只需要关注返回值，接口返回格式由iCoreApi.IResponse统一处理
-	return data, nil
-}
-
-// ========================== 分页 Demo ==========================
-
-// PageRequest offset 分页请求参数
-type PageRequest struct {
-	Page     int `json:"page"`
-	PageSize int `json:"pageSize"`
-}
-
-// PageListApi offset/limit 分页示例
-type PageListApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
-	PageRequest
-}
-
-func (e PageListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-	opts := util.PageOpts{Page: e.Page, PageSize: e.PageSize}
-	mysqlDb := e.DbFactory.Build(ctx).Query(AccountModel{})
-
-	// 查总数
-	total, err := mysqlDb.Count()
-	if err != nil {
-		return nil, errorSvc.NewError(response.Fail, err)
-	}
-
-	// 查当前页
-	var list []AccountModel
-	offset := (opts.Page - 1) * opts.PageSize
-	err = mysqlDb.Order("id desc").Limit(opts.PageSize).Offset(offset).Find(&list)
-	if err != nil {
-		return nil, errorSvc.NewError(response.Fail, err)
-	}
-
-	return util.NewPage(list, total, opts), nil
-}
-
-// CursorRequest 游标分页请求参数
-type CursorRequest struct {
-	Cursor   int `json:"cursor"`
-	PageSize int `json:"pageSize"`
-}
-
-// CursorListApi 游标分页示例
-type CursorListApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
-	CursorRequest
-}
-
-func (e CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
-	pageSize := e.PageSize
-	cursor := e.Cursor
-
-	mysqlDb := e.DbFactory.Build(ctx).Query(AccountModel{})
-
-	// 多查一条用于判断 hasMore
-	var list []AccountModel
-	err := mysqlDb.Where("id > ?", cursor).Order("id asc").Limit(pageSize + 1).Find(&list)
-	if err != nil {
-		return nil, errorSvc.NewError(response.Fail, err)
-	}
-
-	return util.NewCursor(list, pageSize, func(item *AccountModel) any {
-		return item.ID
-	}), nil
-}
-
-// ========================== SSE Demo ==========================
-
-// ExampleSse 定义sse接口
-type ExampleSse struct {
-	LogSvc iCoreLog.ILog `inject:""`
-}
-
-func (e ExampleSse) Serve(ctx *gin.Context) error {
-	e.LogSvc.Info(ctx, "sse start")
-
-	// 获取流写入对象
-	writer := ctx.Writer
-	// 确保连接关闭时退出循环
-	clientCtx := ctx.Request.Context()
-
-	// 循环推送消息（模拟实时数据）
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-clientCtx.Done():
-			// 客户端断开连接，退出
-			fmt.Println("客户端断开连接")
-			return nil
-		case <-ticker.C:
-			// 构造 SSE 消息（固定格式）
-			msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
-			// 写入响应流
-			_, err := writer.WriteString(msg)
-			if err != nil {
-				return err
-			}
-			// 立即刷新到客户端
-			writer.Flush()
-		}
+		"AccountName.required": "用户名不能为空",
+		"Password.required":    "密码不能为空",
+		"Password.min":         "密码长度不能少于6位",
+		"Email.required":       "邮箱不能为空",
+		"Email.email":          "邮箱格式不正确",
+		"Age.min":              "年龄不能小于1",
+		"Age.max":              "年龄不能大于150",
 	}
 }
