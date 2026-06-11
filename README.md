@@ -108,99 +108,35 @@ go mod tidy
 
 ### IOC 容器
 
-通过 `inject:""` tag 自动注入依赖，无需手动传递。
-
-```go
-type AddApi struct {
-    DbFactory iCoreDb.IDbFactory `inject:""`
-    LogSvc    iCoreLog.ILog      `inject:""`
-    AddRequest
-}
-```
-
-→ [IOC 自动注入说明](docs/ioc_injection.md)
+通过 `inject:""` tag 自动注入依赖，无需手动传递。→ [IOC 自动注入说明](docs/ioc_injection.md)
 
 ### API 服务
 
-注册路由时自动完成参数绑定、校验、响应包装。
-
-```go
-apiHandle.Post("account/add", &AddApi{})
-```
-
-→ [路由与中间件说明](docs/routes_middleware.md)
+注册路由时自动完成参数绑定、校验、响应包装。→ [路由与中间件说明](docs/routes_middleware.md)
 
 ### 数据库服务
 
-支持 MySQL 和 PostgreSQL，链式查询，事务操作。
-
-```go
-db := a.DbFactory.Build(ctx)
-tx := db.Begin()
-tx.Add(&account)
-tx.Commit()
-```
-
-→ [数据库组件说明](docs/database.md)
+支持 MySQL 和 PostgreSQL，链式查询，事务操作。→ [数据库组件说明](docs/database.md)
 
 ### 缓存服务
 
-本地内存缓存 + Redis 双层缓存。
-
-```go
-a.CacheFactory.Local().Set(ctx, "key", data, time.Minute)
-a.CacheFactory.Redis().Get(ctx, "key")
-```
-
-→ [缓存组件说明](docs/cache.md)
+本地内存缓存 + Redis 双层缓存，支持 Hash 操作和读穿透。→ [缓存组件说明](docs/cache.md)
 
 ### 日志服务
 
-支持本地文件日志（Zap + lumberjack 滚动）和阿里云 SLS。
-
-```go
-a.LogSvc.Info(ctx, "user login", "user_id", 123)
-```
-
-→ [日志组件说明](docs/logging.md)
+支持本地文件日志（Zap + lumberjack 滚动）和阿里云 SLS。→ [日志组件说明](docs/logging.md)
 
 ### 链路追踪
 
-基于 OpenTelemetry，自动追踪 HTTP 请求并关联日志。
-
-```go
-ctx, span := a.TraceSvc.Start(ctx, "operation-name", "key", "value")
-defer span.End()
-```
-
-→ [链路追踪说明](docs/trace.md)
+基于 OpenTelemetry，自动追踪 HTTP 请求并关联日志。→ [链路追踪说明](docs/trace.md)
 
 ### SSE 实时推送
 
-与 API 共享端口，通过 `ISse` 接口实现服务端主动推送。
+与 API 共享端口，通过 `ISse` 接口实现服务端主动推送。→ [SSE 服务](docs/sse.md)
 
-```go
-type TimeSse struct {
-    LogSvc iCoreLog.ILog `inject:""`
-}
+### 分页组件
 
-func (t TimeSse) Serve(ctx *gin.Context) error {
-    ticker := time.NewTicker(time.Second)
-    defer ticker.Stop()
-    for {
-        select {
-        case <-ctx.Request.Context().Done():
-            return nil
-        case <-ticker.C:
-            writer := ctx.Writer
-            writer.WriteString(fmt.Sprintf("data: %s\n\n", time.Now()))
-            writer.Flush()
-        }
-    }
-}
-```
-
-→ [SSE 服务](docs/sse.md)
+提供 Offset/Limit 分页和游标分页两种模式。→ [分页组件](docs/paginator.md)
 
 ## 设计原则
 
