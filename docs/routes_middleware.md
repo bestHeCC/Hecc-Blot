@@ -416,3 +416,11 @@ server:
 - **类型安全**: 编译时检查接口实现
 - **生产就绪**: 内置超时控制、body 限制、panic 恢复等安全机制
 
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [统一错误与响应](error_response.md) | 响应格式与错误码 |
+| [参数校验](validator.md) | Binding tag 与自定义错误 |
+| [IOC 注入](ioc_injection.md) | 中间件和 API 的依赖注入 |
+| [SSE 服务](sse.md) | SSE 路由与实时推送 |

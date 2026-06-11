@@ -157,3 +157,11 @@ func (l LogrusLogSvc) Debug(ctx context.Context, msg string, fields ...interface
 
 ioc.Set(new(iCoreLog.ILog), &LogrusLogSvc{logger: logrus.New()})
 ```
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [配置说明](config.md) | 日志配置项 |
+| [链路追踪](trace.md) | TraceId 与日志关联 |
+| [组件替换](component_replacement.md) | 替换为 logrus 等第三方库 |

@@ -165,3 +165,11 @@ func (a GetApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 - **Redis 缓存**: 记录 SET / GET / DEL / EXISTS / HSET / HGET / HDEL 操作
 
 Span 属性包含 `cache.type`、`cache.operation`、`cache.key`（Redis 为 `db.system: redis`）。
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [配置说明](config.md) | 缓存配置项 |
+| [链路追踪](trace.md) | 缓存操作的 Trace Span |
+| [数据库组件](database.md) | 缓存读穿透模式 |

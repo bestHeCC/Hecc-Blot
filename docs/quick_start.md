@@ -300,6 +300,15 @@ go run main.go
 | 10 | 分页 | Offset 分页 + 游标分页 | [分页组件](paginator.md) |
 | 11 | SSE 推送 | ISse 接口、心跳、Flusher | [SSE 服务](sse.md) |
 
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [配置说明](config.md) | 全部配置项参考 |
+| [路由与中间件](routes_middleware.md) | API 注册、校验、响应 |
+| [IOC 注入](ioc_injection.md) | 依赖注入原理 |
+| [统一错误与响应](error_response.md) | 错误码与响应格式 |
+
 ## 下一步
 
 - [配置项完整参考](config.md)

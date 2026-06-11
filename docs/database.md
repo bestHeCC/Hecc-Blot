@@ -228,3 +228,11 @@ func (a ListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
     return data, nil
 }
 ```
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [配置说明](config.md) | 数据库连接配置项 |
+| [IOC 注入](ioc_injection.md) | 注入 IDbFactory |
+| [缓存组件](cache.md) | 缓存与数据库配合的读穿透模式 |

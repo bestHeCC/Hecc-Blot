@@ -331,3 +331,12 @@ flowchart TD
 3. **自动生效** - 框架会自动注入新的实现，无需修改其他代码
 
 这种设计实现了**依赖倒置原则**，高层模块不依赖低层模块的具体实现，只依赖抽象接口。
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [IOC 注入](ioc_injection.md) | Set/SetWithName 注册原理 |
+| [数据库组件](database.md) | IDbFactory/IDb 接口定义 |
+| [缓存组件](cache.md) | ICacheFactory 接口定义 |
+| [日志组件](logging.md) | ILog 接口定义 |

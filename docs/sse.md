@@ -158,3 +158,10 @@ if err := sseInstance.Serve(c); err != nil {
 3. **流刷新**: 每次 Write 后需立即 `writer.Flush()` 确保数据即时推送到客户端
 4. **中间件复用**: SSE 中间件与 API 中间件共用 `IMiddleware` 接口，无需单独定义
 5. **依赖注入**: 与 API 一样，SSE 实例通过 IOC 自动注入依赖
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [路由与中间件](routes_middleware.md) | API 路由与中间件复用 |
+| [日志组件](logging.md) | SSE 连接日志 |

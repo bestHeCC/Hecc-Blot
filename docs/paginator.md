@@ -213,3 +213,10 @@ func (e CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 | 跳页 | 支持 | 不支持 |
 | 新增数据影响 | 可能重复或漏数据 | 不受影响 |
 | 适用场景 | 管理后台、报表 | 信息流、无限滚动 |
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [数据库组件](database.md) | Offset/Limit 和 WHERE 游标查询 |
+| [路由与中间件](routes_middleware.md) | 注册分页 API |

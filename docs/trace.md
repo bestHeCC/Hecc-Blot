@@ -153,3 +153,11 @@ req.Header.Set("traceparent", c.GetHeader("traceparent"))
 
 // 接收方自动通过中间件提取
 ```
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [配置说明](config.md) | Trace 配置项 |
+| [日志组件](logging.md) | TraceId 自动关联日志 |
+| [路由与中间件](routes_middleware.md) | HttpTraceMiddleware 自动追踪 |

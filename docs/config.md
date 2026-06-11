@@ -181,3 +181,13 @@ env 映射关系：
 | `always` | 全量采样 |
 | `never` | 不采样 |
 | `probability` | 按比例采样 |
+
+## 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [快速开始](quick_start.md) | 从零搭建项目 |
+| [数据库组件](database.md) | 使用 db 配置 |
+| [缓存组件](cache.md) | 使用 cache 配置 |
+| [日志组件](logging.md) | 使用 log 配置 |
+| [链路追踪](trace.md) | 使用 trace 配置 |
