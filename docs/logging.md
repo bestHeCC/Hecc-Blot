@@ -27,7 +27,7 @@ ioc.Set(new(iCoreLog.ILog), logSvc)
 
 ## 本地日志
 
-默认实现，基于 Zap + lumberjack 实现日志文件自动滚动。
+基于 Zap + lumberjack 实现日志文件自动滚动，配置 enable 为 true 后自动启用
 
 ### 配置
 
@@ -103,18 +103,8 @@ log:
     logstore: "your-logstore"
 ```
 
-SLS 日志服务实现与本地日志共用同一 `ILog` 接口，可通过 `SetWithName` 注册两个实例：
-
-```go
-ioc.SetWithName(new(iCoreLog.ILog), "local", localLogSvc)
-ioc.SetWithName(new(iCoreLog.ILog), "sls", slsLogSvc)
-
-// 使用时指定名称
-type MyApi struct {
-    LocalLog iCoreLog.ILog `inject:"local"`
-    SlsLog   iCoreLog.ILog `inject:"sls"`
-}
-```
+## 注意
+日志组件实例时在本地日志或阿里SLS日志服务中二选一，通过相应的配置enable进行启用，若都开启，则优先使用阿里SLS
 
 ## 在 API 中使用
 

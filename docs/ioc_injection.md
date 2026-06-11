@@ -288,10 +288,6 @@ IOC 容器的单元测试见 `service/ioc/ioc_svc_test.go`，演示了 `Set`、`
 
 ***
 
-## IOC 工作流程图
-
-***
-
 ## 总结
 
 IOC 组件实现了：
