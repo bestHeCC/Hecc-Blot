@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	ilog "github.com/bestHeCC/hecc-core/contract/log"
-	"github.com/bestHeCC/hecc-core/entity/config/log"
+	logContract "github.com/bestHeCC/hecc-log/contract"
+	logConfig "github.com/bestHeCC/hecc-log/config"
 	"github.com/bestHeCC/hecc-core/util"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -83,7 +83,7 @@ func newLogContent(key, value string) *sls.LogContent {
 	}
 }
 
-func newSlsSvc(conf *log.SlsConfig) (ilog.ILog, error) {
+func newSlsSvc(conf *logConfig.SlsConfig) (logContract.ILog, error) {
 	provider := sls.NewStaticCredentialsProvider(conf.AccessKey, conf.SecretKey, conf.SecretToken)
 	client := sls.CreateNormalInterfaceV2(conf.Endpoint, provider)
 

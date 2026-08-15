@@ -1,4 +1,4 @@
-package log
+package config
 
 type Config struct {
 	Local LocalConfig

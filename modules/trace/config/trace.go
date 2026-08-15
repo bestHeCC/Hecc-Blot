@@ -1,4 +1,4 @@
-package trace
+package config
 
 type Config struct {
 	ServiceName string        `mapstructure:"service_name"`

@@ -1,4 +1,4 @@
-package server
+package config
 
 import (
 	envType "github.com/bestHeCC/hecc-core/enum/env"

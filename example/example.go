@@ -9,23 +9,22 @@ import (
 
 	"github.com/bestHeCC/hecc-api"
 	"github.com/bestHeCC/hecc-cache"
+	cacheContract "github.com/bestHeCC/hecc-cache/contract"
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
-	iCoreCache "github.com/bestHeCC/hecc-core/contract/cache"
-	iCoreDb "github.com/bestHeCC/hecc-core/contract/db"
 	iCoreError "github.com/bestHeCC/hecc-core/contract/error"
-	iCoreLog "github.com/bestHeCC/hecc-core/contract/log"
-	iCoreSse "github.com/bestHeCC/hecc-core/contract/sse"
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
 	entityApi "github.com/bestHeCC/hecc-core/entity/api"
-	coreConfig "github.com/bestHeCC/hecc-core/entity/config"
 	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
 	"github.com/bestHeCC/hecc-core/enum/response"
 	"github.com/bestHeCC/hecc-core/util"
 	"github.com/bestHeCC/hecc-db"
+	dbContract "github.com/bestHeCC/hecc-db/contract"
 	errorSvc "github.com/bestHeCC/hecc-error"
 	"github.com/bestHeCC/hecc-log"
+	logContract "github.com/bestHeCC/hecc-log/contract"
 	"github.com/bestHeCC/hecc-sse"
+	sseContract "github.com/bestHeCC/hecc-sse/contract"
 	"github.com/bestHeCC/hecc-trace"
+	traceContract "github.com/bestHeCC/hecc-trace/contract"
 
 	"github.com/bestHeCC/hecc-ioc"
 	"github.com/gin-gonic/gin"
@@ -59,11 +58,11 @@ func main() {
 	// 注册到 IOC 容器（顺序无关，但必须在路由注册之前）
 	container := ioc.New()
 
-	container.Set(new(iCoreDb.IDbFactory), dbFactory)
-	container.Set(new(iCoreLog.ILog), logSvc)
-	container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+	container.Set(new(dbContract.IDbFactory), dbFactory)
+	container.Set(new(logContract.ILog), logSvc)
+	container.Set(new(cacheContract.ICacheFactory), cacheFactory)
 	container.Set(new(iCoreApi.IResponse), responseSvc)
-	container.Set(new(iCoreTrace.ITrace), traceSvc)
+	container.Set(new(traceContract.ITrace), traceSvc)
 
 	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 	registerRoutes(apiHandle)
@@ -94,13 +93,13 @@ func must2[T, U any](val T, cleanup U, err error) (T, U) {
 // 演示：使用 viper 读取 config.yaml，反序列化为 config.Config 结构体
 // 详见：docs/config.md
 
-func initConf(configPath string) *coreConfig.Config {
+func initConf(configPath string) *Config {
 	v := viper.New()
 	v.SetConfigFile(configPath)
 	if err := v.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("读取配置文件失败: %w", err))
 	}
-	var conf coreConfig.Config
+	var conf Config
 	if err := v.Unmarshal(&conf); err != nil {
 		panic(fmt.Errorf("解析配置文件失败: %w", err))
 	}
@@ -225,8 +224,8 @@ func (m SseCorsMiddleware) Middleware() any {
 
 // AddAccountApi 新增账户 + 事务演示
 type AddAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
-	LogSvc    iCoreLog.ILog      `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
+	LogSvc    logContract.ILog      `inject:""`
 	AddAccountRequest
 }
 
@@ -261,7 +260,7 @@ func (a AddAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 
 // TakeAccountApi 查询单条记录
 type TakeAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a TakeAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -275,7 +274,7 @@ func (a TakeAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) 
 
 // FindAccountApi 查询多条记录（条件筛选 + 排序 + 字段选择）
 type FindAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a FindAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -293,7 +292,7 @@ func (a FindAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) 
 
 // CountAccountApi 统计记录数
 type CountAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a CountAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -307,7 +306,7 @@ func (a CountAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError)
 
 // UpdateAccountApi 更新记录
 type UpdateAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a UpdateAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -321,7 +320,7 @@ func (a UpdateAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError
 
 // DeleteAccountApi 删除记录
 type DeleteAccountApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a DeleteAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -338,7 +337,7 @@ func (a DeleteAccountApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError
 
 // DbSwitchApi 多数据库切换 — 展示同时操作 MySQL 和 PostgreSQL
 type DbSwitchApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 }
 
 func (a DbSwitchApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -374,7 +373,7 @@ func (a DbSwitchApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 
 // CacheBasicApi 缓存基础操作
 type CacheBasicApi struct {
-	CacheFactory iCoreCache.ICacheFactory `inject:""`
+	CacheFactory cacheContract.ICacheFactory `inject:""`
 }
 
 func (a CacheBasicApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -397,7 +396,7 @@ func (a CacheBasicApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 
 // CacheHashApi Redis Hash 操作
 type CacheHashApi struct {
-	CacheFactory iCoreCache.ICacheFactory `inject:""`
+	CacheFactory cacheContract.ICacheFactory `inject:""`
 }
 
 func (a CacheHashApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -418,8 +417,8 @@ func (a CacheHashApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 
 // CacheReadThroughApi 缓存读穿透 — 先查缓存，未命中则查 DB 并回写缓存
 type CacheReadThroughApi struct {
-	CacheFactory iCoreCache.ICacheFactory `inject:""`
-	DbFactory    iCoreDb.IDbFactory       `inject:""`
+	CacheFactory cacheContract.ICacheFactory `inject:""`
+	DbFactory    dbContract.IDbFactory       `inject:""`
 }
 
 func (a CacheReadThroughApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -450,8 +449,8 @@ func (a CacheReadThroughApi) Call(ctx *gin.Context) (interface{}, iCoreError.IEr
 
 // TraceDemoApi 链路追踪示例
 type TraceDemoApi struct {
-	TraceSvc iCoreTrace.ITrace `inject:""`
-	LogSvc   iCoreLog.ILog     `inject:""`
+	TraceSvc traceContract.ITrace `inject:""`
+	LogSvc   logContract.ILog     `inject:""`
 }
 
 func (a TraceDemoApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
@@ -493,7 +492,7 @@ type PageRequest struct {
 
 // PageListApi offset/limit 分页示例
 type PageListApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 	PageRequest
 }
 
@@ -524,7 +523,7 @@ type CursorRequest struct {
 
 // CursorListApi 游标分页示例
 type CursorListApi struct {
-	DbFactory iCoreDb.IDbFactory `inject:""`
+	DbFactory dbContract.IDbFactory `inject:""`
 	CursorRequest
 }
 
@@ -551,10 +550,10 @@ func (a CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 
 // ExampleSse SSE 实时推送示例
 type ExampleSse struct {
-	LogSvc iCoreLog.ILog `inject:""`
+	LogSvc logContract.ILog `inject:""`
 }
 
-func (e ExampleSse) Serve(ctx context.Context, w iCoreSse.Writer) error {
+func (e ExampleSse) Serve(ctx context.Context, w sseContract.Writer) error {
 	e.LogSvc.Info(ctx, "sse connection established")
 
 	// 业务推送：每秒推送服务器时间
@@ -612,7 +611,7 @@ func registerRoutes(apiHandle iCoreApi.IApiHandle) {
 	}
 }
 
-func registerSseRoutes(sseHandle iCoreSse.ISseHandle) {
+func registerSseRoutes(sseHandle sseContract.ISseHandle) {
 	// — Section 11: SSE 推送 —
 	// 通过中间件做 Accept 校验（策略性校验不内置在框架）
 	sseGroup := sseHandle.Group("", &SseAcceptMiddleware{}, &SseCorsMiddleware{})

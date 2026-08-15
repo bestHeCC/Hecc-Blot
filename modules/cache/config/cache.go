@@ -1,4 +1,4 @@
-package cache
+package config
 
 type Config struct {
 	Local Local

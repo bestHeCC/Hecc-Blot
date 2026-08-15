@@ -5,15 +5,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bestHeCC/hecc-core/contract/cache"
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
-	cacheConf "github.com/bestHeCC/hecc-core/entity/config/cache"
+	cacheContract "github.com/bestHeCC/hecc-cache/contract"
+	"github.com/bestHeCC/hecc-trace/contract"
+	cacheConf "github.com/bestHeCC/hecc-cache/config"
 	"github.com/bestHeCC/hecc-core/util"
 
 	"github.com/redis/go-redis/v9"
 )
 
-// noopSpan 是 iCoreTrace.Span 的空实现，避免到处判空
+// noopSpan 是 trace.Span 的空实现，避免到处判空
 type noopSpan struct{}
 
 func (noopSpan) End()                             {}
@@ -23,11 +23,11 @@ func (noopSpan) Name() string                     { return "" }
 
 type redisCacheSvc struct {
 	client   *redis.Client
-	traceSvc iCoreTrace.ITrace
+	traceSvc trace.ITrace
 }
 
 // startSpan 统一创建 trace span，traceSvc 为空时返回 noopSpan
-func (r *redisCacheSvc) startSpan(ctx context.Context, name string, extra ...interface{}) (context.Context, iCoreTrace.Span) {
+func (r *redisCacheSvc) startSpan(ctx context.Context, name string, extra ...interface{}) (context.Context, trace.Span) {
 	if r.traceSvc == nil {
 		return ctx, noopSpan{}
 	}
@@ -128,7 +128,7 @@ func (r *redisCacheSvc) Close() error {
 	return r.client.Close()
 }
 
-func newRedisCacheSvc(redisConf *cacheConf.Redis, traceSvc iCoreTrace.ITrace) cache.IRedisCache {
+func newRedisCacheSvc(redisConf *cacheConf.Redis, traceSvc trace.ITrace) cacheContract.IRedisCache {
 	c := redis.NewClient(&redis.Options{
 		Addr:     redisConf.Addr,
 		Password: redisConf.Password,

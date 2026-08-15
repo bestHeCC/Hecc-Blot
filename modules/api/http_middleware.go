@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
-	"github.com/bestHeCC/hecc-core/enum/trace"
+	"github.com/bestHeCC/hecc-trace/contract"
+	traceEnum "github.com/bestHeCC/hecc-core/enum/trace"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/propagation"
@@ -12,7 +12,7 @@ import (
 )
 
 type HttpTraceMiddleware struct {
-	TraceSvc iCoreTrace.ITrace
+	TraceSvc trace.ITrace
 }
 
 func (h *HttpTraceMiddleware) Middleware() interface{} {
@@ -45,7 +45,7 @@ func (h *HttpTraceMiddleware) Middleware() interface{} {
 		defer span.End()
 
 		// 将 traceId 存储到 context.Context 中（不是 gin.Context）
-		ctx = context.WithValue(ctx, trace.TraceIdKey, traceId)
+		ctx = context.WithValue(ctx, traceEnum.TraceIdKey, traceId)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 

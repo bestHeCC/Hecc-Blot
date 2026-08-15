@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/bestHeCC/hecc-core/contract/db"
-	"github.com/bestHeCC/hecc-core/contract/log"
+	dbContract "github.com/bestHeCC/hecc-db/contract"
+	"github.com/bestHeCC/hecc-log/contract"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -18,12 +18,12 @@ import (
 type BaseDbSvc struct {
 	ctx   context.Context
 	db    *gorm.DB
-	model db.IDbModel
+	model dbContract.IDbModel
 }
 
 // Begin 开启事务，返回新的 BaseDbSvc 实例，原始实例不受影响。
 // Commit/Rollback 只在返回的实例上调用才有效。
-func (b *BaseDbSvc) Begin() db.IDb {
+func (b *BaseDbSvc) Begin() dbContract.IDb {
 	gl := b.db.Statement.Logger.(logger.Interface)
 	txDB := b.db.Begin()
 	gl.Info(b.ctx, "transaction started")
@@ -46,17 +46,17 @@ func (b *BaseDbSvc) Commit() error {
 }
 
 // Add 添加记录
-func (b *BaseDbSvc) Add(entry db.IDbModel) error {
+func (b *BaseDbSvc) Add(entry dbContract.IDbModel) error {
 	return b.db.Create(entry).Error
 }
 
 // Remove 删除记录
-func (b *BaseDbSvc) Remove(entry db.IDbModel) error {
+func (b *BaseDbSvc) Remove(entry dbContract.IDbModel) error {
 	return b.db.Delete(&entry).Error
 }
 
 // Query 查询 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Query(entry db.IDbModel) db.IDb {
+func (b *BaseDbSvc) Query(entry dbContract.IDbModel) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Model(&entry),
@@ -64,7 +64,7 @@ func (b *BaseDbSvc) Query(entry db.IDbModel) db.IDb {
 }
 
 // Save 保存记录
-func (b *BaseDbSvc) Save(entry db.IDbModel) error {
+func (b *BaseDbSvc) Save(entry dbContract.IDbModel) error {
 	return b.db.Updates(entry).Error
 }
 
@@ -76,7 +76,7 @@ func (b *BaseDbSvc) Count() (int64, error) {
 }
 
 // Order 排序 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Order(fields ...string) db.IDb {
+func (b *BaseDbSvc) Order(fields ...string) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Order(fields),
@@ -84,7 +84,7 @@ func (b *BaseDbSvc) Order(fields ...string) db.IDb {
 }
 
 // Select 选择字段 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Select(args ...interface{}) db.IDb {
+func (b *BaseDbSvc) Select(args ...interface{}) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Select(args[0], args[1:]...),
@@ -92,7 +92,7 @@ func (b *BaseDbSvc) Select(args ...interface{}) db.IDb {
 }
 
 // Offset 偏移 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Offset(v int) db.IDb {
+func (b *BaseDbSvc) Offset(v int) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Offset(v),
@@ -100,7 +100,7 @@ func (b *BaseDbSvc) Offset(v int) db.IDb {
 }
 
 // Limit 限制 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Limit(v int) db.IDb {
+func (b *BaseDbSvc) Limit(v int) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Limit(v),
@@ -108,7 +108,7 @@ func (b *BaseDbSvc) Limit(v int) db.IDb {
 }
 
 // Where 条件 — 返回副本，不修改原实例
-func (b *BaseDbSvc) Where(args ...interface{}) db.IDb {
+func (b *BaseDbSvc) Where(args ...interface{}) dbContract.IDb {
 	return &BaseDbSvc{
 		ctx: b.ctx,
 		db:  b.db.Where(args[0], args[1:]...),

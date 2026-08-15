@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bestHeCC/hecc-core/contract/cache"
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
-	cacheConf "github.com/bestHeCC/hecc-core/entity/config/cache"
+	cacheContract "github.com/bestHeCC/hecc-cache/contract"
+	"github.com/bestHeCC/hecc-trace/contract"
+	cacheConf "github.com/bestHeCC/hecc-cache/config"
 	"github.com/bestHeCC/hecc-core/util"
 )
 
@@ -19,7 +19,7 @@ type localCacheSvc struct {
 	// clearInterval is 清除缓存的时间间隔
 	clearInterval time.Duration
 	// traceSvc is 追踪服务
-	traceSvc iCoreTrace.ITrace
+	traceSvc trace.ITrace
 }
 
 type memCacheVal struct {
@@ -193,7 +193,7 @@ func (c *localCacheSvc) clearExpired() {
 	}
 }
 
-func newLocalCacheSvc(config *cacheConf.Local, traceSvc iCoreTrace.ITrace) cache.ILocalCache {
+func newLocalCacheSvc(config *cacheConf.Local, traceSvc trace.ITrace) cacheContract.ILocalCache {
 	localCache := &localCacheSvc{
 		values:        make(map[string]*memCacheVal),
 		clearInterval: time.Duration(config.ClearInterval) * time.Second,

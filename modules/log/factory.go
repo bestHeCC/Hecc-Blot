@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	iLog "github.com/bestHeCC/hecc-core/contract/log"
-	"github.com/bestHeCC/hecc-core/entity/config/log"
+	logContract "github.com/bestHeCC/hecc-log/contract"
+	logConfig "github.com/bestHeCC/hecc-log/config"
 	"github.com/bestHeCC/hecc-core/enum/trace"
 )
 
@@ -18,7 +18,7 @@ func getTraceId(ctx context.Context) string {
 	return ""
 }
 
-func NewLogger(config *log.Config) (iLog.ILog, error) {
+func NewLogger(config *logConfig.Config) (logContract.ILog, error) {
 	// 优先使用sls日志服务
 	slsConfig := config.Sls
 	if slsConfig.Enable {

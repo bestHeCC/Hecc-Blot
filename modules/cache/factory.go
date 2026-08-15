@@ -1,26 +1,26 @@
 package cache
 
 import (
-	"github.com/bestHeCC/hecc-core/contract/cache"
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
-	cacheConf "github.com/bestHeCC/hecc-core/entity/config/cache"
+	cacheContract "github.com/bestHeCC/hecc-cache/contract"
+	"github.com/bestHeCC/hecc-trace/contract"
+	cacheConf "github.com/bestHeCC/hecc-cache/config"
 )
 
 type Factory struct {
 	config *cacheConf.Config
-	local  cache.ILocalCache
-	redis  cache.IRedisCache
+	local  cacheContract.ILocalCache
+	redis  cacheContract.IRedisCache
 }
 
-func (f Factory) Local() cache.ILocalCache {
+func (f Factory) Local() cacheContract.ILocalCache {
 	return f.local
 }
 
-func (f Factory) Redis() cache.IRedisCache {
+func (f Factory) Redis() cacheContract.IRedisCache {
 	return f.redis
 }
 
-func NewCacheFactory(config *cacheConf.Config, traceSvc iCoreTrace.ITrace) cache.ICacheFactory {
+func NewCacheFactory(config *cacheConf.Config, traceSvc trace.ITrace) cacheContract.ICacheFactory {
 	return Factory{
 		config: config,
 		local:  newLocalCacheSvc(&config.Local, traceSvc),

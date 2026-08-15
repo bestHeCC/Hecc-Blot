@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bestHeCC/hecc-core/entity/config/cache"
-	traceConf "github.com/bestHeCC/hecc-core/entity/config/trace"
+	"github.com/bestHeCC/hecc-cache/config"
+	traceConf "github.com/bestHeCC/hecc-trace/config"
 	"github.com/bestHeCC/hecc-trace"
 
 	"github.com/redis/go-redis/v9"

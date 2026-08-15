@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bestHeCC/hecc-core/contract/db"
-	"github.com/bestHeCC/hecc-core/contract/log"
-	dbConf "github.com/bestHeCC/hecc-core/entity/config/db"
+	dbContract "github.com/bestHeCC/hecc-db/contract"
+	"github.com/bestHeCC/hecc-log/contract"
+	dbConf "github.com/bestHeCC/hecc-db/config"
 	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
 
 	"gorm.io/gorm"
 )
 
 type Factory struct {
-	db        map[dbEnum.Value]db.IDb
+	db        map[dbEnum.Value]dbContract.IDb
 	defaultDb dbEnum.Value
 }
 
-func (f *Factory) Build(ctx context.Context, v ...dbEnum.Value) db.IDb {
+func (f *Factory) Build(ctx context.Context, v ...dbEnum.Value) dbContract.IDb {
 	t := f.defaultDb
 	if len(v) > 0 {
 		t = v[0]
@@ -43,9 +43,9 @@ func (f *Factory) SetDefault(t dbEnum.Value) {
 	f.defaultDb = t
 }
 
-func NewDbFactory(config *dbConf.Config, logger log.ILog) (db.IDbFactory, func(), error) {
+func NewDbFactory(config *dbConf.Config, logger log.ILog) (dbContract.IDbFactory, func(), error) {
 	f := Factory{
-		db:        make(map[dbEnum.Value]db.IDb),
+		db:        make(map[dbEnum.Value]dbContract.IDb),
 		defaultDb: dbEnum.Mysql, // 默认使用mysql
 	}
 	var cleanupFuncs []func()

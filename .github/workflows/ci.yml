@@ -71,21 +71,18 @@ jobs:
 
       - name: Build
         run: |
-          go build ./...
-          for m in modules/*/; do
+          for m in example modules/*/; do
             (cd "$m" && go build ./...)
           done
 
       - name: Vet
         run: |
-          go vet ./...
-          for m in modules/*/; do
+          for m in example modules/*/; do
             (cd "$m" && go vet ./...)
           done
 
       - name: Test
         run: |
-          go test ./...
-          for m in modules/*/; do
+          for m in example modules/*/; do
             (cd "$m" && go test ./...)
           done

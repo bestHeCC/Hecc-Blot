@@ -13,8 +13,8 @@ import (
 
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
 	"github.com/bestHeCC/hecc-core/contract/ioc"
-	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
-	"github.com/bestHeCC/hecc-core/entity/config/server"
+	"github.com/bestHeCC/hecc-trace/contract"
+	serverConfig "github.com/bestHeCC/hecc-api/config"
 	envEnum "github.com/bestHeCC/hecc-core/enum/env"
 	"github.com/bestHeCC/hecc-core/enum/response"
 	"github.com/bestHeCC/hecc-core/util"
@@ -24,7 +24,7 @@ import (
 )
 
 type ApiHandle struct {
-	config      *server.Config
+	config      *serverConfig.Config
 	engine      *gin.Engine
 	group       *gin.RouterGroup
 	responseSvc iCoreApi.IResponse
@@ -163,7 +163,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance any, method string) 
 	}
 }
 
-func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc iCoreTrace.ITrace, container ioc.IContainer) iCoreApi.IApiHandle {
+func NewApiSvc(config *serverConfig.Config, responseSvc iCoreApi.IResponse, traceSvc trace.ITrace, container ioc.IContainer) iCoreApi.IApiHandle {
 	mode, ok := mapEnv[config.Env]
 	if !ok {
 		panic(fmt.Sprintf("无效环境配置:%s", mode))

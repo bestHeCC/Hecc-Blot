@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bestHeCC/hecc-core/entity/config/log"
+	logConfig "github.com/bestHeCC/hecc-log/config"
 	"github.com/bestHeCC/hecc-core/enum/trace"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var localConf = &log.LocalConfig{
+var localConf = &logConfig.LocalConfig{
 	RootDir:    "./runtime/logs",
 	MaxSize:    1,
 	MaxBackups: 3,

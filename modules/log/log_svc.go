@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/bestHeCC/hecc-core/contract/log"
-	logConfig "github.com/bestHeCC/hecc-core/entity/config/log"
+	logContract "github.com/bestHeCC/hecc-log/contract"
+	logConfig "github.com/bestHeCC/hecc-log/config"
 	"github.com/bestHeCC/hecc-core/util"
 
 	"go.uber.org/zap"
@@ -50,7 +50,7 @@ func (b LogSvc) buildFields(traceId string, fields ...interface{}) []zapcore.Fie
 	return zapFields
 }
 
-func newLogSvc(logConf *logConfig.LocalConfig) (log.ILog, error) {
+func newLogSvc(logConf *logConfig.LocalConfig) (logContract.ILog, error) {
 	var rootDir string
 	var maxSize, maxBackups, maxAge int
 	var compress bool

@@ -58,3 +58,41 @@ func TestContainer(t *testing.T) {
 		assert.Equal(t, "set test", d3.Child.Test())
 	})
 }
+
+func TestContainerEdgeCases(t *testing.T) {
+	t.Run("Inject 非指针 panic", func(t *testing.T) {
+		container := New()
+		var d defaultTest
+		assert.Panics(t, func() {
+			container.Inject(d)
+		})
+	})
+
+	t.Run("Set 未实现接口 panic", func(t *testing.T) {
+		container := New()
+		assert.Panics(t, func() {
+			container.Set(new(iInterface), "not implementing")
+		})
+	})
+
+	t.Run("Get 未注册 panic", func(t *testing.T) {
+		container := New()
+		assert.Panics(t, func() {
+			container.Get(new(iInterface), "")
+		})
+	})
+
+	t.Run("多容器隔离", func(t *testing.T) {
+		c1 := New()
+		c2 := New()
+		c1.Set(new(iInterface), derive{})
+
+		var d defaultTest
+		assert.Panics(t, func() {
+			c2.Inject(&d)
+		})
+
+		c1.Inject(&d)
+		assert.Equal(t, "set test", d.One.Test())
+	})
+}

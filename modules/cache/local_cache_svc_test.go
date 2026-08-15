@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bestHeCC/hecc-core/entity/config/cache"
+	"github.com/bestHeCC/hecc-cache/config"
 	"github.com/bestHeCC/hecc-trace"
 
 	"github.com/stretchr/testify/assert"
