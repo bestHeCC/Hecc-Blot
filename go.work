@@ -1,0 +1,12 @@
+go 1.26.1
+
+use (
+	.
+	./modules/ioc
+	./modules/core
+	./modules/api
+	./modules/db
+	./modules/cache
+	./modules/log
+	./modules/trace
+)

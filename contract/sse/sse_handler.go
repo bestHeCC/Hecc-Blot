@@ -1,8 +1,0 @@
-package sse
-
-import iCoreApi "hecc-blot/contract/api"
-
-type ISseHandle interface {
-	Get(apiPath string, sse ISse)
-	Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
-}

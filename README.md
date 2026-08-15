@@ -1,8 +1,8 @@
 # Hecc-Blot
 
-[![Go Version](https://img.shields.io/badge/Go-1.26.1-blue)](https://github.com/hecc/hecc-blot)
+[![Go Version](https://img.shields.io/badge/Go-1.26.1-blue)](https://github.com/bestHeCC/Hecc-Blot)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Gitee Repo](https://img.shields.io/badge/Gitee-hecc--blot-red)](https://gitee.com/bestHeCC/hecc-blot)
+[![Gitee Repo](https://img.shields.io/badge/Gitee-hecc--go--core-red)](https://gitee.com/bestHeCC/hecc-go-core)
 
 Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口的设计理念，提供依赖注入、路由注册、参数校验、统一响应等核心功能。
 
@@ -31,30 +31,21 @@ go mod tidy
 ## 目录结构
 
 ```
-├── contract/         # 接口契约定义
-│   ├── api/          # API、中间件、响应、校验器接口
-│   ├── cache/        # 本地缓存、Redis 缓存、缓存工厂接口
-│   ├── db/           # 数据库操作、数据库工厂、模型接口
-│   ├── error/        # 统一错误接口
-│   ├── log/          # 日志接口
-│   ├── sse/          # SSE 接口
-│   └── trace/        # 链路追踪接口
-├── entity/           # 实体与配置结构体
-│   ├── api/          # 校验器消息类型
-│   └── config/       # 配置文件映射（server / db / cache / log / trace）
-├── enum/             # 枚举定义（环境 / 数据库类型 / 响应码 / 采样类型）
-├── service/          # 服务实现
-│   ├── api/          # HTTP 路由、响应包装、校验器
-│   ├── cache/        # 本地缓存、Redis 缓存、缓存工厂
-│   ├── db/           # MySQL / PostgreSQL（基于 GORM）、工厂、事务
-│   ├── error/        # 错误处理
-│   ├── ioc/          # IOC 容器
-│   ├── log/          # 本地日志（Zap）、阿里云 SLS 日志
-│   ├── sse/          # SSE 推送服务
-│   └── trace/        # OpenTelemetry 追踪、HTTP 中间件
-├── docs/             # 文档
-├── util/             # 工具函数
-├── example.go        # 完整使用示例
+├── modules/                # 子模块（go.work 管理，Monorepo 多 module）
+│   ├── ioc/                # 依赖注入容器（github.com/bestHeCC/hecc-ioc）
+│   ├── core/               # 契约 SDK（github.com/bestHeCC/hecc-core）
+│   │   ├── contract/       # 接口契约（api/cache/db/error/ioc/log/sse/trace）
+│   │   ├── entity/         # 实体与配置结构体
+│   │   ├── enum/           # 枚举（env/db/response/trace）
+│   │   └── util/           # 工具函数（分页、校验消息、上下文提取）
+│   ├── api/                # HTTP 内核 + 错误 + SSE（github.com/bestHeCC/hecc-api）
+│   ├── db/                 # MySQL / PostgreSQL（github.com/bestHeCC/hecc-db）
+│   ├── cache/              # 本地 + Redis 缓存（github.com/bestHeCC/hecc-cache）
+│   ├── log/                # 日志（github.com/bestHeCC/hecc-log）
+│   └── trace/              # OpenTelemetry 追踪（github.com/bestHeCC/hecc-trace）
+├── docs/                   # 文档
+├── go.work                 # workspace 配置
+├── example.go              # 完整使用示例
 └── README.md
 ```
 
@@ -154,7 +145,7 @@ go mod tidy
 
 ### 反馈与贡献
 
-- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/hecc-blot/issues)
+- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/hecc-go-core/issues)
 - **代码贡献**: 欢迎提交 Pull Request
 
 ### 致谢

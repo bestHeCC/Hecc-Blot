@@ -1,0 +1,45 @@
+package api
+
+import (
+	"context"
+	"net/http"
+	"sync"
+
+	"github.com/bestHeCC/hecc-core/contract/api"
+	coreError "github.com/bestHeCC/hecc-core/contract/error"
+	"github.com/bestHeCC/hecc-core/enum/response"
+
+	"github.com/gin-gonic/gin"
+)
+
+type ResponseSvc struct {
+	Code    response.Value `json:"code"`
+	Message string         `json:"message"`
+	Data    any            `json:"data"`
+}
+
+var responsePool = sync.Pool{
+	New: func() any { return &ResponseSvc{} },
+}
+
+func (r *ResponseSvc) Regular(ctx context.Context, data any, err coreError.IError) {
+	g := ctx.(*gin.Context)
+	code := response.Success
+	if err != nil {
+		code = err.GetCode()
+		data = err.GetData()
+	}
+
+	resp := responsePool.Get().(*ResponseSvc)
+	defer responsePool.Put(resp)
+
+	resp.Code = code
+	resp.Message = response.CodeMap[code]
+	resp.Data = data
+
+	g.JSON(http.StatusOK, resp)
+}
+
+func NewResponseSvc() api.IResponse {
+	return &ResponseSvc{}
+}

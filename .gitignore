@@ -3,5 +3,7 @@
 config.yaml
 .trae/
 runtime/
-service/db/runtime/
+modules/db/runtime/
+modules/log/runtime/
+*.exe
 .claude/

@@ -5,27 +5,27 @@ import (
 	"net/http"
 	"time"
 
-	iCoreApi "hecc-blot/contract/api"
-	iCoreCache "hecc-blot/contract/cache"
-	iCoreDb "hecc-blot/contract/db"
-	iCoreError "hecc-blot/contract/error"
-	iCoreLog "hecc-blot/contract/log"
-	iCoreSse "hecc-blot/contract/sse"
-	iCoreTrace "hecc-blot/contract/trace"
-	entityApi "hecc-blot/entity/api"
-	coreConfig "hecc-blot/entity/config"
-	dbEnum "hecc-blot/enum/db"
-	"hecc-blot/enum/response"
-	"hecc-blot/service/api"
-	"hecc-blot/service/cache"
-	"hecc-blot/service/db"
-	errorSvc "hecc-blot/service/error"
-	"hecc-blot/service/ioc"
-	"hecc-blot/service/log"
-	"hecc-blot/service/sse"
-	"hecc-blot/service/trace"
-	"hecc-blot/util"
+	"github.com/bestHeCC/hecc-api"
+	errorSvc "github.com/bestHeCC/hecc-api/error"
+	"github.com/bestHeCC/hecc-api/sse"
+	"github.com/bestHeCC/hecc-cache"
+	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
+	iCoreCache "github.com/bestHeCC/hecc-core/contract/cache"
+	iCoreDb "github.com/bestHeCC/hecc-core/contract/db"
+	iCoreError "github.com/bestHeCC/hecc-core/contract/error"
+	iCoreLog "github.com/bestHeCC/hecc-core/contract/log"
+	iCoreSse "github.com/bestHeCC/hecc-core/contract/sse"
+	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
+	entityApi "github.com/bestHeCC/hecc-core/entity/api"
+	coreConfig "github.com/bestHeCC/hecc-core/entity/config"
+	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
+	"github.com/bestHeCC/hecc-core/enum/response"
+	"github.com/bestHeCC/hecc-core/util"
+	"github.com/bestHeCC/hecc-db"
+	"github.com/bestHeCC/hecc-log"
+	"github.com/bestHeCC/hecc-trace"
 
+	"github.com/bestHeCC/hecc-ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"gorm.io/plugin/soft_delete"
@@ -46,25 +46,27 @@ func main() {
 	responseSvc := api.NewResponseSvc()
 
 	// defer 注册退出清理（LIFO 顺序执行）
-	defer dbClearUp()
-	defer traceClearUp()
 	defer func() {
+		dbClearUp()
+		traceClearUp()
 		if cacheFactory.Redis() != nil {
 			_ = cacheFactory.Redis().Close()
 		}
 	}()
 
 	// 注册到 IOC 容器（顺序无关，但必须在路由注册之前）
-	ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
-	ioc.Set(new(iCoreLog.ILog), logSvc)
-	ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
-	ioc.Set(new(iCoreApi.IResponse), responseSvc)
-	ioc.Set(new(iCoreTrace.ITrace), traceSvc)
+	container := ioc.New()
 
-	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+	container.Set(new(iCoreDb.IDbFactory), dbFactory)
+	container.Set(new(iCoreLog.ILog), logSvc)
+	container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+	container.Set(new(iCoreApi.IResponse), responseSvc)
+	container.Set(new(iCoreTrace.ITrace), traceSvc)
+
+	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 	registerRoutes(apiHandle)
 
-	sseHandle := sse.NewSseSvc(apiHandle.Engine())
+	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
 	registerSseRoutes(sseHandle)
 
 	apiHandle.Listen()
