@@ -24,14 +24,16 @@ modules/
 │   ├── entity/     数据实体与配置结构体
 │   ├── enum/       枚举（env/db/response/trace）
 │   └── util/       工具函数（分页、校验消息、上下文提取）
-├── api/      → github.com/bestHeCC/hecc-api    HTTP 内核（api + error + sse + trace中间件）
+├── api/      → github.com/bestHeCC/hecc-api    HTTP 内核（路由 + 响应 + trace中间件）
+├── error/    → github.com/bestHeCC/hecc-error  统一错误实现
+├── sse/      → github.com/bestHeCC/hecc-sse    SSE 推送
 ├── db/       → github.com/bestHeCC/hecc-db     数据库（GORM MySQL/PostgreSQL）
 ├── cache/    → github.com/bestHeCC/hecc-cache  缓存（本地 + Redis）
 ├── log/      → github.com/bestHeCC/hecc-log    日志（Zap + SLS）
 └── trace/    → github.com/bestHeCC/hecc-trace  链路追踪（OpenTelemetry）
 ```
 
-依赖方向严格单向：`core → 第三方`，`api/db/cache/log/trace → core`，`api → ioc 接口`。**禁止反向依赖**（core 不得 import 实现模块，实现模块之间不得互相依赖具体实现）。
+依赖方向严格单向：`core → 第三方`，`api/error/sse/db/cache/log/trace → core`，`api → error`，`api/sse → ioc 接口`。**禁止反向依赖**（core 不得 import 实现模块，实现模块之间不得互相依赖具体实现）。
 
 ## 3. 包与导入别名约定
 
@@ -43,7 +45,7 @@ modules/
 | `hecc-core/entity/config` | `coreConfig` | `coreConfig "github.com/bestHeCC/hecc-core/entity/config"` |
 | `hecc-core/entity/api` | `entityApi` | `entityApi "github.com/bestHeCC/hecc-core/entity/api"` |
 | `hecc-core/enum/*` | `*Enum` 或原包名 | `dbEnum`、`envEnum`；`"github.com/bestHeCC/hecc-core/enum/response"` |
-| 实现模块（`hecc-api/*` 等） | 原包名，冲突时加后缀 | `errorSvc "github.com/bestHeCC/hecc-api/error"` |
+| 实现模块（`hecc-api`/`hecc-error` 等） | 原包名，冲突时加后缀 | `errorSvc "github.com/bestHeCC/hecc-error"` |
 
 接口命名：`I` 前缀（`IApi`、`IDb`、`ILog`、`ITrace`、`IError`、`ISse`、`IContainer`）。工厂/处理器接口为 `I*Factory`、`I*Handle`。
 
@@ -86,7 +88,7 @@ type AddAccountApi struct {
 
 ### 4.5 错误必须走统一错误
 
-`Call` 返回 `(interface{}, IError)`，错误统一用 `hecc-api/error` 构造，配合 `hecc-core/enum/response` 的响应码：
+`Call` 返回 `(interface{}, IError)`，错误统一用 `hecc-error` 构造，配合 `hecc-core/enum/response` 的响应码：
 
 ```go
 return nil, errorSvc.NewError(response.Fail, err)

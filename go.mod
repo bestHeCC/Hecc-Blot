@@ -26,6 +26,15 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.1 // indirect
+	github.com/bestHeCC/hecc-api v0.0.0
+	github.com/bestHeCC/hecc-cache v0.0.0
+	github.com/bestHeCC/hecc-core v0.0.0
+	github.com/bestHeCC/hecc-db v0.0.0
+	github.com/bestHeCC/hecc-error v0.0.0
+	github.com/bestHeCC/hecc-ioc v0.0.0
+	github.com/bestHeCC/hecc-log v0.0.0
+	github.com/bestHeCC/hecc-sse v0.0.0
+	github.com/bestHeCC/hecc-trace v0.0.0
 	github.com/bytedance/gopkg v0.1.4 // indirect
 	github.com/bytedance/sonic v1.15.1 // indirect
 	github.com/bytedance/sonic/loader v0.5.1 // indirect
@@ -50,13 +59,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/bestHeCC/hecc-api v0.0.0
-	github.com/bestHeCC/hecc-cache v0.0.0
-	github.com/bestHeCC/hecc-core v0.0.0
-	github.com/bestHeCC/hecc-db v0.0.0
-	github.com/bestHeCC/hecc-ioc v0.0.0
-	github.com/bestHeCC/hecc-log v0.0.0
-	github.com/bestHeCC/hecc-trace v0.0.0
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
@@ -118,3 +120,7 @@ replace github.com/bestHeCC/hecc-cache => ./modules/cache
 replace github.com/bestHeCC/hecc-log => ./modules/log
 
 replace github.com/bestHeCC/hecc-trace => ./modules/trace
+
+replace github.com/bestHeCC/hecc-error => ./modules/error
+
+replace github.com/bestHeCC/hecc-sse => ./modules/sse

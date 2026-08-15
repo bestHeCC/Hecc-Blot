@@ -5,6 +5,8 @@ use (
 	./modules/ioc
 	./modules/core
 	./modules/api
+	./modules/error
+	./modules/sse
 	./modules/db
 	./modules/cache
 	./modules/log

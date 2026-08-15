@@ -38,7 +38,9 @@ go mod tidy
 │   │   ├── entity/         # 实体与配置结构体
 │   │   ├── enum/           # 枚举（env/db/response/trace）
 │   │   └── util/           # 工具函数（分页、校验消息、上下文提取）
-│   ├── api/                # HTTP 内核 + 错误 + SSE（github.com/bestHeCC/hecc-api）
+│   ├── api/                # HTTP 内核（github.com/bestHeCC/hecc-api）
+│   ├── error/              # 统一错误（github.com/bestHeCC/hecc-error）
+│   ├── sse/                # SSE 推送（github.com/bestHeCC/hecc-sse）
 │   ├── db/                 # MySQL / PostgreSQL（github.com/bestHeCC/hecc-db）
 │   ├── cache/              # 本地 + Redis 缓存（github.com/bestHeCC/hecc-cache）
 │   ├── log/                # 日志（github.com/bestHeCC/hecc-log）

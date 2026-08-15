@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	coreError "github.com/bestHeCC/hecc-api/error"
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
 	"github.com/bestHeCC/hecc-core/contract/ioc"
 	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
@@ -19,6 +18,7 @@ import (
 	envEnum "github.com/bestHeCC/hecc-core/enum/env"
 	"github.com/bestHeCC/hecc-core/enum/response"
 	"github.com/bestHeCC/hecc-core/util"
+	coreError "github.com/bestHeCC/hecc-error"
 
 	"github.com/gin-gonic/gin"
 )
