@@ -103,11 +103,11 @@
 
 #### 3.2 SSE 帧辅助方法
 
-**位置:** `util/` — 新增 `sse_writer.go`
+**位置:** `modules/sse/util/` — 新增 `sse_writer.go`
 
 **问题:** 用户手动拼接 `data: ...\n\n`、`event: ...\n\n`、`id: ...\n\n`，容易漏换行符。
 
-**方案:** 提供 `util.WriteSSE(w, id, event, data)` 辅助方法，自动处理格式。
+**方案:** 提供 `WriteSSE(w, id, event, data)` 辅助方法（位于 `modules/sse/util`），自动处理格式。
 
 ---
 
@@ -115,7 +115,7 @@
 
 #### 4.1 背压控制
 
-**位置:** `util/sse_writer.go` — 新增
+**位置:** `modules/sse/util/sse_writer.go` — 新增
 
 **问题:** 生产速度 > 消费速度时，TCP 发送缓冲区填满导致 `Write()` 阻塞或 OOM。
 

@@ -125,6 +125,7 @@ type ISseHandle interface {
 - **连接统计**: `Stats()` 返回活跃/总数/断开连接数，便于排障与容量规划
 - **优雅关闭**: `Shutdown()` 通知所有活跃连接发送 shutdown 帧后断开，配合 `apiHandle.Listen(sseHandle.Shutdown)` 使用
 - **链路追踪**: 传入 traceSvc 时为连接创建 `sse.connection` span，业务通过 ctx 关联追踪
+- **帧写入工具**: `sse/util` 提供 `WriteSSE(w, id, event, data)` 辅助方法，框架内部复用，也供需要手动拼帧的场景使用
 
 ## 完整示例
 

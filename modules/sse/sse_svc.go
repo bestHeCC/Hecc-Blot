@@ -16,7 +16,7 @@ import (
 	iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
 
 	"github.com/bestHeCC/hecc-core/contract/ioc"
-	"github.com/bestHeCC/hecc-core/util"
+	sseutil "github.com/bestHeCC/hecc-sse/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -249,7 +249,7 @@ func (w *sseWriter) write(id, event, data string) error {
 	defer w.mu.Unlock()
 
 	var buf bytes.Buffer
-	if err := util.WriteSSE(&buf, id, event, data); err != nil {
+	if err := sseutil.WriteSSE(&buf, id, event, data); err != nil {
 		return err
 	}
 	return w.writeRaw(buf.String())
