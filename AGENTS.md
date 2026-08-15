@@ -105,7 +105,7 @@ return nil, errorSvc.NewError(response.Fail, err)
 - **缓存**：`ICacheFactory.Local()/Redis()`，本地缓存 + Redis 双层；`IBaseCache` 提供 `Set/Get/Del/Exists`。
 - **日志**：`ILog.Info/Debug/Warn/Error(ctx, msg, fields...)`，`fields` 用 `zap` 字段（`zap.String(...)`）。自动附加 `traceId`。
 - **链路追踪**：`ITrace.Start/FromContext` 返回 `Span`，支持 `SetAttribute/RecordError/End`。`HttpTraceMiddleware`（在 `hecc-api` 内）自动创建请求 Span 并注入 `traceId` 到 context（key 见 `enum/trace`）。
-- **SSE**：实现 `ISse.Serve(ctx) error`，通过 `ISseHandle.Get` 注册，与 API 共享端口。注意 `http.Flusher` 断言与 `Accept: text/event-stream` 校验（见 `feature.md` 已知问题）。
+- **SSE**：实现 `ISse.Serve(ctx, w)` 接口，通过 `ISseHandle.Get` 注册，与 API 共享端口。框架已封装 Flusher 断言、心跳、Accept 校验、连接限流与错误帧，业务通过 `Writer.Send` 写入、通过 `ctx` 感知断开。
 
 ## 6. 新增一个业务接口的标准步骤
 
@@ -153,6 +153,6 @@ go build ./... && go test ./...
 
 ## 10. 已知规划
 
-`feature.md` 记录了 SSE 模块的待优化项（并发安全、连接上限、心跳超时、`Last-Event-Id` 断线续传等），是后续迭代的路标。改动 SSE 前先对照该文件，避免重复设计。
+`feature.md` 记录了 SSE 模块的待优化项（稳定性阶段已落地，剩余可运维/可接入/高性能/可观测阶段），是后续迭代的路标。改动 SSE 前先对照该文件，避免重复设计。
 
 更详细的分模块文档见 `docs/`（`quick_start.md`、`ioc_injection.md`、`routes_middleware.md`、`database.md`、`cache.md`、`logging.md`、`trace.md`、`sse.md`、`paginator.md`、`component_replacement.md`）。

@@ -7,7 +7,13 @@ Hecc-Blot 支持 Server-Sent Events（SSE），用于向客户端主动推送实
 ```go
 // modules/core/contract/sse/sse.go
 type ISse interface {
-    Serve(ctx *gin.Context) error
+    Serve(ctx context.Context, w Writer) error
+}
+
+// Writer SSE 写入抽象，由框架实现并注入给业务
+type Writer interface {
+    Send(id, event, data string) error
+    LastEventID() string
 }
 
 // modules/core/contract/sse/sse_handler.go
@@ -19,16 +25,18 @@ type ISseHandle interface {
 
 SSE 复用 `modules/core/contract/api` 中的 `IMiddleware` 接口，无需单独定义中间件接口。
 
+框架在底层封装了 `http.Flusher` 断言、心跳保活、并发锁、`Accept: text/event-stream` 校验、连接数上限与错误帧格式化，业务只需通过 `Writer` 写入、通过 `ctx` 感知连接断开。
+
 ## 初始化
 
 SSE 服务与 API 服务共享 Engine，创建时传入 API 的 Engine：
 
 ```go
 // 创建 API 处理器
-apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 
 // 创建 SSE 处理器，共享 API 的 Engine
-sseHandle := sse.NewSseSvc(apiHandle.Engine())
+sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
 
 // 启动服务（仅 API 调用 Listen，SSE 共享同一端口）
 apiHandle.Listen()
@@ -43,25 +51,22 @@ type ExampleSse struct {
     LogSvc iCoreLog.ILog `inject:""`
 }
 
-func (e ExampleSse) Serve(ctx *gin.Context) error {
+func (e ExampleSse) Serve(ctx context.Context, w iCoreSse.Writer) error {
     e.LogSvc.Info(ctx, "sse start")
-
-    writer := ctx.Writer
-    clientCtx := ctx.Request.Context()
 
     ticker := time.NewTicker(1 * time.Second)
     defer ticker.Stop()
 
     for {
         select {
-        case <-clientCtx.Done():
+        case <-ctx.Done():
+            // 客户端断开或心跳写入失败
             return nil
         case <-ticker.C:
-            msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
-            if _, err := writer.WriteString(msg); err != nil {
+            msg := fmt.Sprintf("当前服务器时间：%s", time.Now().Format(time.RFC3339))
+            if err := w.Send("", "", msg); err != nil {
                 return err
             }
-            writer.Flush()
         }
     }
 }
@@ -71,7 +76,7 @@ func (e ExampleSse) Serve(ctx *gin.Context) error {
 
 ```go
 func registerSse(sseHandle iCoreSse.ISseHandle) {
-    sseHandle.Middleware(&ReplayMiddleware{}, &TokenMiddleware{})
+    sseHandle.Middleware(&TokenMiddleware{})
     {
         sseHandle.Get("example/sse", &ExampleSse{})
     }
@@ -94,20 +99,21 @@ type ISseHandle interface {
 **请求处理流程：**
 
 ```
-请求 → [中间件链] → [设置SSE响应头] → [Serve()] → [持续推送事件]
-                                                 ↓
-                                         客户端断开 / Serve 返回 error
-                                                 ↓
-                                         发送 error SSE 事件 → 结束
+请求 → [中间件链] → [Accept/Flusher 校验] → [连接数限流] → [设置SSE响应头] → [Serve()] → [持续推送事件]
+                                                                              ↓
+                                                                   客户端断开 / 心跳失败 / Serve 返回 error
+                                                                              ↓
+                                                               发送 error SSE 事件（JSON）→ 结束
 ```
 
-**注意事项：**
+**框架自动处理的能力：**
 
-- **共享端口**: SSE 与 API 共用同一 Engine，只需调用 `apiHandle.Listen()` 一次
-- **长连接**: Serve 方法需监听 `ctx.Request.Context().Done()` 感知客户端断开
-- **流刷新**: 每次 `Write` 后需立即 `writer.Flush()`
-- **中间件复用**: SSE 与 API 共用 `IMiddleware`，注册方式完全一致
-- **错误处理**: Serve 返回 error 时，框架通过 `c.SSEvent("error", ...)` 发送，不修改 HTTP 状态码
+- **实例隔离**: 每个连接创建独立业务实例，避免并发共享
+- **连接数上限**: 超出上限返回 503
+- **心跳保活**: 每 30s 发送 SSE comment，写入失败自动取消连接
+- **Flusher 断言**: Writer 不支持流式时返回 500
+- **Accept 校验**: 缺失 `text/event-stream` 返回 406
+- **Last-Event-Id**: 提取请求头，通过 `w.LastEventID()` 暴露给业务做断线续传
 
 ## 完整示例
 
@@ -115,14 +121,17 @@ type ISseHandle interface {
 func main() {
     // ... 初始化日志、数据库、缓存、IOC 注册 ...
 
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+    container := ioc.New()
+    // ... container.Set(...) ...
+
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 
     // 注册 API 路由
     apiHandle.Middleware(&TokenMiddleware{})
     apiHandle.Post("example/api", &ExampleApi{})
 
     // 注册 SSE 路由（共享 Engine）
-    sseHandle := sse.NewSseSvc(apiHandle.Engine())
+    sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
     sseHandle.Middleware(&TokenMiddleware{})
     sseHandle.Get("example/sse", &ExampleSse{})
 
@@ -131,31 +140,22 @@ func main() {
 }
 ```
 
-## SSE 响应头
-
-框架自动设置以下 SSE 响应头，并立即 Flush 确保客户端及时识别流类型：
-
-- `Content-Type: text/event-stream`
-- `Cache-Control: no-cache`
-- `Connection: keep-alive`
-
-设置头后立即调用 `c.Writer.Flush()`，客户端无需等待第一个事件即可确认连接类型。
-
 ## 错误处理
 
-Serve 返回 error 时，框架通过 SSE `error` 事件发送错误信息，不会中断流连接：
+Serve 返回 error 时，框架以 JSON 格式发送 SSE `error` 事件，不会中断流连接：
 
-```go
-if err := sseInstance.Serve(c); err != nil {
-    c.SSEvent("error", err.Error())
-}
 ```
+event: error
+data: {"code":"500","message":"..."}
+```
+
+客户端可据此区分错误类型并做相应处理。
 
 ## 注意事项
 
 1. **共享端口**: SSE 与 API 共用同一 Gin Engine，只需调用 `apiHandle.Listen()` 一次
-2. **长连接**: SSE 连接会一直保持直到客户端断开，Serve 方法需要监听 `ctx.Request.Context().Done()` 来感知断开
-3. **流刷新**: 每次 Write 后需立即 `writer.Flush()` 确保数据即时推送到客户端
+2. **长连接**: SSE 连接会一直保持直到客户端断开或心跳失败，Serve 方法监听 `ctx.Done()` 感知断开
+3. **写入**: 业务通过 `w.Send()` 写入，框架自动 Flush 并保证并发安全
 4. **中间件复用**: SSE 中间件与 API 中间件共用 `IMiddleware` 接口，无需单独定义
 5. **依赖注入**: 与 API 一样，SSE 实例通过 IOC 自动注入依赖
 

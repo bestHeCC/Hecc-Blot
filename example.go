@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/bestHeCC/hecc-api"
@@ -512,7 +512,7 @@ func (a CursorListApi) Call(ctx *gin.Context) (interface{}, iCoreError.IError) {
 }
 
 // ===== 11. SSE 推送 =====
-// 演示：ISse 接口、心跳保活、http.Flusher 断言保护
+// 演示：ISse 接口 + Writer 写入抽象（心跳、Flusher 断言由框架处理）
 // 详见：docs/sse.md
 
 // ExampleSse SSE 实时推送示例
@@ -520,44 +520,24 @@ type ExampleSse struct {
 	LogSvc iCoreLog.ILog `inject:""`
 }
 
-func (e ExampleSse) Serve(ctx *gin.Context) error {
+func (e ExampleSse) Serve(ctx context.Context, w iCoreSse.Writer) error {
 	e.LogSvc.Info(ctx, "sse connection established")
 
-	// 1. 断言 Writer 支持 http.Flusher（防止被中间件包装后 panic）
-	flusher, ok := ctx.Writer.(http.Flusher)
-	if !ok {
-		return fmt.Errorf("ResponseWriter does not support http.Flusher")
-	}
-	// 提示：生产环境应检查 Accept: text/event-stream 头，缺少时返回 406
-
-	clientCtx := ctx.Request.Context()
-
-	// 2. 心跳 goroutine — 每 30s 发 SSE comment，防止连接空闲断开
-	heartbeat := time.NewTicker(30 * time.Second)
-	defer heartbeat.Stop()
-
-	// 3. 业务推送 — 每秒推送服务器时间
+	// 业务推送：每秒推送服务器时间
 	business := time.NewTicker(1 * time.Second)
 	defer business.Stop()
 
 	for {
 		select {
-		case <-clientCtx.Done():
-			// 客户端断开
+		case <-ctx.Done():
+			// 客户端断开或心跳写入失败
 			e.LogSvc.Info(ctx, "sse client disconnected")
 			return nil
-		case <-heartbeat.C:
-			// 心跳帧：SSE comment，客户端静默忽略
-			if _, err := ctx.Writer.WriteString(": heartbeat\n\n"); err != nil {
-				return err
-			}
-			flusher.Flush()
 		case <-business.C:
-			msg := fmt.Sprintf("data: 当前服务器时间：%s\n\n", time.Now().Format(time.RFC3339))
-			if _, err := ctx.Writer.WriteString(msg); err != nil {
+			msg := fmt.Sprintf("当前服务器时间：%s", time.Now().Format(time.RFC3339))
+			if err := w.Send("", "", msg); err != nil {
 				return err
 			}
-			flusher.Flush()
 		}
 	}
 }
