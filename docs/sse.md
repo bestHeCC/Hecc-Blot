@@ -120,7 +120,7 @@ type ISseHandle interface {
 - **连接数上限**: 超出上限返回 503
 - **心跳保活**: 每 30s 发送 SSE comment，写入失败自动取消连接
 - **Flusher 断言**: Writer 不支持流式时返回 500
-- **Accept 校验**: 建议通过中间件实现（见 `example.go` 的 `SseAcceptMiddleware`），框架不内置
+- **Accept 校验**: 建议通过中间件实现（见 `example/example.go` 的 `SseAcceptMiddleware`），框架不内置
 - **Last-Event-Id**: 提取请求头，通过 `w.LastEventID()` 暴露给业务做断线续传
 - **连接统计**: `Stats()` 返回活跃/总数/断开连接数，便于排障与容量规划
 - **优雅关闭**: `Shutdown()` 通知所有活跃连接发送 shutdown 帧后断开，配合 `apiHandle.Listen(sseHandle.Shutdown)` 使用

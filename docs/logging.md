@@ -81,7 +81,7 @@ a.LogSvc.Info(ctx, "order created",
     "level": "info",
     "msg": "user login",
     "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "caller": "example.go:209",
+    "caller": "example/example.go:209",
     "user_id": 123
 }
 ```

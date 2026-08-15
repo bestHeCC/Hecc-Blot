@@ -8,13 +8,13 @@ Hecc-Blot 是一个基于 Go 的轻量级后端框架，核心理念是**面向�
 
 - 所有能力通过 `hecc-core` 模块的 `contract/` 接口契约暴露，具体实现按模块拆分、可替换。
 - 依赖通过反射实现的 IOC 容器自动注入，容器本身也通过 `IContainer` 接口约束、可替换。
-- 业务方（如 `example.go`）只依赖接口，不 import 具体实现（IOC 容器创建除外）。
+- 业务方（如 `example/example.go`）只依赖接口，不 import 具体实现（IOC 容器创建除外）。
 
 技术栈：Gin（HTTP）、GORM（MySQL/PostgreSQL）、go-redis（缓存）、Zap + lumberjack（日志）、OpenTelemetry（链路追踪）、viper（配置）。
 
 ## 2. 模块架构（Monorepo 多 module）
 
-`go.work` 统一管理，根模块 `hecc-blot` 承载 `example.go` 示例，`modules/` 下按依赖分层拆分：
+`go.work` 统一管理，根模块 `hecc-blot` 是框架本体，`example/` 为使用示例（根模块子包），`modules/` 下按依赖分层拆分：
 
 ```
 modules/
@@ -37,7 +37,7 @@ modules/
 
 ## 3. 包与导入别名约定
 
-`example.go` 是导入别名的权威范例，遵循：
+`example/example.go` 是导入别名的权威范例，遵循：
 
 | 模块路径 | 别名 | 示例 |
 |------|------|------|
@@ -117,7 +117,7 @@ return nil, errorSvc.NewError(response.Fail, err)
 4. 在路由注册处 `apiHandle.Get("xxx/yyy", &XxxApi{})`。
 5. 启动前在 `main` 把依赖 `container.Set` 进容器。
 
-完整可运行范式直接照抄 `example.go`（11 个分节覆盖全部能力）。
+完整可运行范式直接照抄 `example/example.go`（11 个分节覆盖全部能力）。
 
 ## 7. 新增 / 替换组件
 
@@ -143,7 +143,7 @@ Monorepo 多 module，用 `go.work` 管理。在**各模块目录内**运行：
 cd modules/<xxx> && go mod tidy && go build ./... && go test ./...
 ```
 
-或从根目录对根模块（`example.go`）：
+或从根目录对根模块（`example/example.go`）：
 
 ```bash
 go build ./... && go test ./...

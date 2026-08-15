@@ -1,10 +1,10 @@
 .idea/
 .vscode/
-config.yaml
+example/config.yaml
 .trae/
 runtime/
+example/runtime/
 modules/db/runtime/
 modules/log/runtime/
 *.exe
 .claude/
-hecc-blot.exe

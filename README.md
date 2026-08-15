@@ -24,10 +24,11 @@ Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口
 
 ## 快速开始
 
-完整可运行示例见 [`example.go`](example.go)，按模块分节覆盖了框架全部功能。
+完整可运行示例见 [`example/example.go`](example/example.go)，按模块分节覆盖了框架全部功能。
 
 ```bash
-go mod tidy
+cd example
+go run .
 ```
 
 ## 目录结构
@@ -47,9 +48,9 @@ go mod tidy
 │   ├── cache/              # 本地 + Redis 缓存（github.com/bestHeCC/hecc-cache）
 │   ├── log/                # 日志（github.com/bestHeCC/hecc-log）
 │   └── trace/              # OpenTelemetry 追踪（github.com/bestHeCC/hecc-trace）
+├── example/                # 完整使用示例（go run ./example）
 ├── docs/                   # 文档
 ├── go.work                 # workspace 配置
-├── example.go              # 完整使用示例
 └── README.md
 ```
 
@@ -57,7 +58,7 @@ go mod tidy
 
 ## 示例代码导航
 
-`example.go` 按模块分为 11 节，可作为框架功能的活文档使用：
+`example/example.go` 按模块分为 11 节，可作为框架功能的活文档使用：
 
 | # | 章节 | 演示内容 | 详文 |
 |---|------|----------|------|

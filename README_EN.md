@@ -24,10 +24,11 @@ Hecc-Blot is a lightweight Go backend framework built around interface-oriented 
 
 ## Quick Start
 
-See [`example.go`](example.go) for a complete runnable example covering all features, organized by module.
+See [`example/example.go`](example/example.go) for a complete runnable example covering all features, organized by module.
 
 ```bash
-go mod tidy
+cd example
+go run .
 ```
 
 ## Project Layout
@@ -47,9 +48,9 @@ go mod tidy
 │   ├── cache/              # local + Redis cache (github.com/bestHeCC/hecc-cache)
 │   ├── log/                # logging (github.com/bestHeCC/hecc-log)
 │   └── trace/              # OpenTelemetry tracing (github.com/bestHeCC/hecc-trace)
+├── example/                # full usage example (go run ./example)
 ├── docs/                   # documentation (currently in Chinese)
 ├── go.work                 # workspace config
-├── example.go              # full usage example
 └── README.md
 ```
 
@@ -59,7 +60,7 @@ go mod tidy
 
 ### Example Walkthrough
 
-`example.go` is divided into 11 sections and serves as living documentation:
+`example/example.go` is divided into 11 sections and serves as living documentation:
 
 | # | Section | Demonstrates | Details |
 |---|---------|--------------|---------|

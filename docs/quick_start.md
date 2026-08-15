@@ -1,6 +1,6 @@
 # 快速开始指南
 
-本文档基于 `example.go` 完整示例，带你从零搭建一个 Hecc-Blot 项目。
+本文档基于 `example/example.go` 完整示例，带你从零搭建一个 Hecc-Blot 项目。
 
 ## 1. 项目初始化
 
@@ -285,7 +285,7 @@ go run main.go
 
 ## 示例代码导航
 
-完整的 [`example.go`](../example.go) 按模块分为 11 节，覆盖框架全部功能：
+完整的 [`example/example.go`](../example.go) 按模块分为 11 节，覆盖框架全部功能：
 
 | # | 章节 | 演示内容 | 详文 |
 |---|------|----------|------|
