@@ -1,6 +1,6 @@
 # 分页组件
 
-Hecc-Blot 提供两种分页模式：**Offset/Limit 分页**和**游标分页**，位于 `util/paginator.go`。
+Hecc-Blot 提供两种分页模式：**Offset/Limit 分页**和**游标分页**，位于 `modules/core/util/paginator.go`。
 
 ## Offset/Limit 分页
 

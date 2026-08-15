@@ -224,14 +224,15 @@ func main() {
     responseSvc := api.NewResponseSvc()
 
     // 7. 注册到 IOC 容器（顺序无关，但必须在路由注册之前）
-    ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
-    ioc.Set(new(iCoreLog.ILog), logSvc)
-    ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
-    ioc.Set(new(iCoreApi.IResponse), responseSvc)
-    ioc.Set(new(iCoreTrace.ITrace), traceSvc)
+    container := ioc.New()
+    container.Set(new(iCoreDb.IDbFactory), dbFactory)
+    container.Set(new(iCoreLog.ILog), logSvc)
+    container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+    container.Set(new(iCoreApi.IResponse), responseSvc)
+    container.Set(new(iCoreTrace.ITrace), traceSvc)
 
     // 8. 创建 API 处理器并注册路由
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
     apiHandle.Middleware(&TokenMiddleware{})
 	{
 	apiHandle.Post("account/add", &AddAccountApi{})

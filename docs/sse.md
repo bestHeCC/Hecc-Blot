@@ -5,19 +5,19 @@ Hecc-Blot 支持 Server-Sent Events（SSE），用于向客户端主动推送实
 ## 接口定义
 
 ```go
-// contract/sse/sse.go
+// modules/core/contract/sse/sse.go
 type ISse interface {
     Serve(ctx *gin.Context) error
 }
 
-// contract/sse/sse_handler.go
+// modules/core/contract/sse/sse_handler.go
 type ISseHandle interface {
     Get(apiPath string, sse ISse)
     Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
 }
 ```
 
-SSE 复用 `contract/api` 中的 `IMiddleware` 接口，无需单独定义中间件接口。
+SSE 复用 `modules/core/contract/api` 中的 `IMiddleware` 接口，无需单独定义中间件接口。
 
 ## 初始化
 
@@ -80,7 +80,7 @@ func registerSse(sseHandle iCoreSse.ISseHandle) {
 
 ### 路由注册原理
 
-SSE 处理器接口定义在 `contract/sse/sse_handler.go`：
+SSE 处理器接口定义在 `modules/core/contract/sse/sse_handler.go`：
 
 ```go
 type ISseHandle interface {

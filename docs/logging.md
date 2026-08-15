@@ -21,8 +21,9 @@ if err != nil {
     panic(err)
 }
 
-// 注册到 IOC
-ioc.Set(new(iCoreLog.ILog), logSvc)
+// 注册到 IOC 容器
+container := ioc.New()
+container.Set(new(iCoreLog.ILog), logSvc)
 ```
 
 ## 本地日志
@@ -145,7 +146,8 @@ func (l LogrusLogSvc) Debug(ctx context.Context, msg string, fields ...interface
 }
 // ... 实现 Info / Warn / Error
 
-ioc.Set(new(iCoreLog.ILog), &LogrusLogSvc{logger: logrus.New()})
+container := ioc.New()
+container.Set(new(iCoreLog.ILog), &LogrusLogSvc{logger: logrus.New()})
 ```
 
 ## 相关文档

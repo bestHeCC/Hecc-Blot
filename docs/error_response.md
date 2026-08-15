@@ -23,7 +23,7 @@
 ## 错误接口
 
 ```go
-// contract/error/error.go
+// modules/core/contract/error/error.go
 type IError interface {
     error
     GetCode() response.Value
@@ -31,7 +31,7 @@ type IError interface {
 }
 ```
 
-提供四个构造函数，位于 `service/error/error_svc.go`：
+提供四个构造函数，位于 `modules/error/error_svc.go`：
 
 ```go
 // 传入响应码 + 原始 error
@@ -47,7 +47,7 @@ err := errorSvc.Newf(response.ValidateError, "字段 %s 不能为空", "name")
 
 ## 响应码一览
 
-定义在 `enum/response/index.go`：
+定义在 `modules/core/enum/response/index.go`：
 
 | 常量 | 值 | 说明 |
 |------|------|------|

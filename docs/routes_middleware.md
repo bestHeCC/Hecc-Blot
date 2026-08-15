@@ -221,7 +221,7 @@ func (a AddRequest) GetMessages() entityApi.Messages {
 
 ```go
 func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method string) {
-    ioc.Inject(apiInstance)
+    f.container.Inject(apiInstance)
 
     if _, ok := apiInstance.(api.IApi); ok {
         // 缓存具体类型
@@ -230,7 +230,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance interface{}, method 
         handler := func(c *gin.Context) {
             // 每个请求创建独立实例，避免并发共享写入
             newInstance := reflect.New(apiType).Interface()
-            ioc.Inject(newInstance)
+            f.container.Inject(newInstance)
             api := newInstance.(iCoreApi.IApi)
 
             // 自动绑定参数并校验
@@ -288,14 +288,15 @@ func main() {
     responseSvc := api.NewResponseSvc()
     
     // 注册到 IOC 容器
-    ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
-    ioc.Set(new(iCoreLog.ILog), logSvc)
-    ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
-    ioc.Set(new(iCoreApi.IResponse), responseSvc)
-    ioc.Set(new(iCoreTrace.ITrace), traceSvc)
+    container := ioc.New()
+    container.Set(new(iCoreDb.IDbFactory), dbFactory)
+    container.Set(new(iCoreLog.ILog), logSvc)
+    container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+    container.Set(new(iCoreApi.IResponse), responseSvc)
+    container.Set(new(iCoreTrace.ITrace), traceSvc)
     
     // 创建 API 处理器
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
     
     // 注册路由和中间件
     register(apiHandle)

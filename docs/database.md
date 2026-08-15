@@ -40,8 +40,9 @@ if err != nil {
 }
 defer clearUp()
 
-// 注册到 IOC
-ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
+// 注册到 IOC 容器
+container := ioc.New()
+container.Set(new(iCoreDb.IDbFactory), dbFactory)
 ```
 
 ## Model 定义

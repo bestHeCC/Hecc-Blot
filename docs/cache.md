@@ -36,8 +36,9 @@ type IRedisCache interface {
 // 传入 traceSvc 以开启缓存操作的链路追踪，不需要可传 nil
 cacheFactory := cache.NewCacheFactory(&config.Cache, traceSvc)
 
-// 注册到 IOC
-ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+// 注册到 IOC 容器
+container := ioc.New()
+container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
 ```
 
 ## 本地缓存

@@ -41,7 +41,8 @@ func (m MyCustomLog) Warn(ctx context.Context, msg string, fields ...interface{}
 myLog := &MyCustomLog{}
 
 // 注册到IOC容器，覆盖默认实现
-ioc.Set(new(iCoreLog.ILog), myLog)
+container := ioc.New()
+container.Set(new(iCoreLog.ILog), myLog)
 ```
 
 ---
@@ -89,7 +90,8 @@ func main() {
     logSvc := NewLogrusLogSvc()
     
     // 注册到IOC容器
-    ioc.Set(new(iCoreLog.ILog), logSvc)
+    container := ioc.New()
+    container.Set(new(iCoreLog.ILog), logSvc)
     
     // ... 其他初始化代码
 }
@@ -187,7 +189,8 @@ func main() {
     defer cleanup()
 
     dbFactory := &XormDbFactory{db: xormDb}
-    ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
+    container := ioc.New()
+    container.Set(new(iCoreDb.IDbFactory), dbFactory)
 }
 ```
 
@@ -262,7 +265,8 @@ func (f MyCacheFactory) Redis() iCoreCache.IRedisCache {
 // 3. 在 main 函数中注册
 func main() {
     cacheFactory := &MyCacheFactory{}
-    ioc.Set(new(iCoreCache.ICacheFactory), cacheFactory)
+    container := ioc.New()
+    container.Set(new(iCoreCache.ICacheFactory), cacheFactory)
 }
 ```
 
@@ -283,7 +287,7 @@ func main() {
 
 ### 3. 配置兼容性
 
-- 如果自定义组件需要新的配置字段，需要更新 `entity/config` 目录下的配置结构体
+- 如果自定义组件需要新的配置字段，需要更新 `modules/core/entity/config` 目录下的配置结构体
 - 配置文件格式保持 YAML 格式
 
 ### 4. 测试验证
@@ -327,7 +331,7 @@ flowchart TD
 框架的面向接口设计使得组件替换非常简单：
 
 1. **实现接口** - 创建自定义实现类，实现对应接口的所有方法
-2. **注册到IOC** - 通过 `ioc.Set()` 将实例注册到容器
+2. **注册到IOC** - 通过 `container.Set()` 将实例注册到容器
 3. **自动生效** - 框架会自动注入新的实现，无需修改其他代码
 
 这种设计实现了**依赖倒置原则**，高层模块不依赖低层模块的具体实现，只依赖抽象接口。

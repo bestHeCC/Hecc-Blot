@@ -38,20 +38,26 @@ graph TD
 ### 1. 核心数据结构
 
 ```go
-// 存储接口类型到实例的映射
-var instanceValues = make(map[reflect.Type]map[string]reflect.Value)
+// Container 依赖注入容器，可实例化，支持多容器隔离
+type Container struct {
+    values map[reflect.Type]map[string]reflect.Value
+}
+
+// New 创建新的注入容器
+func New() *Container
 ```
 
 - **外层 Map**: Key 为接口类型 (`reflect.Type`)，Value 为内层 Map
 - **内层 Map**: Key 为实例名称（用于区分同接口的多个实现），Value 为实例的反射值
+- **容器实例**: 通过 `ioc.New()` 显式创建，框架组件依赖 `IContainer` 接口（见 `core/contract/ioc`）而非具体实现
 
 ### 2. 注册方法
 
 #### Set - 注册默认实例
 
 ```go
-func Set(interfaceObj interface{}, instance interface{}) {
-    SetWithName(interfaceObj, "", instance)
+func (c *Container) Set(interfaceObj interface{}, instance interface{}) {
+    c.SetWithName(interfaceObj, "", instance)
 }
 ```
 
@@ -63,27 +69,30 @@ func Set(interfaceObj interface{}, instance interface{}) {
 **使用示例**:
 
 ```go
+// 创建 IOC 容器
+container := ioc.New()
+
 // 注册日志服务
 logSvc := log.NewLogger(&config.Log)
-ioc.Set(new(iCoreLog.ILog), logSvc)
+container.Set(new(iCoreLog.ILog), logSvc)
 
 // 注册数据库工厂
 dbFactory, _, _ := db.NewDbFactory(&config.Db, logSvc)
-ioc.Set(new(iCoreDb.IDbFactory), dbFactory)
+container.Set(new(iCoreDb.IDbFactory), dbFactory)
 ```
 
 #### SetWithName - 注册命名实例
 
 ```go
-func SetWithName(interfaceObj interface{}, name string, instance interface{})
+func (c *Container) SetWithName(interfaceObj interface{}, name string, instance interface{})
 ```
 
 **使用场景**: 同一接口有多个实现时，通过名称区分
 
 ```go
 // 注册两个不同的日志实现
-ioc.SetWithName(new(iCoreLog.ILog), "local", localLog)
-ioc.SetWithName(new(iCoreLog.ILog), "remote", remoteLog)
+container.SetWithName(new(iCoreLog.ILog), "local", localLog)
+container.SetWithName(new(iCoreLog.ILog), "remote", remoteLog)
 ```
 
 ***
@@ -93,7 +102,7 @@ ioc.SetWithName(new(iCoreLog.ILog), "remote", remoteLog)
 ### 1. 注入流程
 
 ```go
-func Inject(instance interface{}) {
+func (c *Container) Inject(instance interface{}) {
     instanceValue := reflect.ValueOf(instance)
     if instanceValue.Kind() != reflect.Ptr {
         panic("ioc: 注入实例必须是指针")
@@ -201,14 +210,17 @@ func (m MyLogSvc) Warn(ctx context.Context, msg string, fields ...interface{}) {
 
 ```go
 func main() {
+    // 创建 IOC 容器
+    container := ioc.New()
+    
     // 创建自定义实例
     myLog := &MyLogSvc{}
     
     // 注册到 IOC 容器（覆盖默认实现）
-    ioc.Set(new(iCoreLog.ILog), myLog)
+    container.Set(new(iCoreLog.ILog), myLog)
     
     // 创建 API 处理器
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
     
     // 注册 API（自动注入时会使用自定义实现）
     apiHandle.Post("account/add", &AddApi{})
@@ -284,7 +296,7 @@ type MyApi struct {
 
 ## 单测示例
 
-IOC 容器的单元测试见 `service/ioc/ioc_svc_test.go`，演示了 `Set`、`SetWithName`、`Inject` 的标准用法和验证方式。
+IOC 容器的单元测试见 `modules/ioc/ioc_svc_test.go`，演示了 `Container` 的 `Set`、`SetWithName`、`Inject` 方法的标准用法和验证方式。
 
 ***
 
