@@ -24,9 +24,6 @@ func New() *Container {
 	}
 }
 
-// Default 默认容器，供包级便捷函数使用。
-var Default = New()
-
 // Get 根据接口类型与名称获取注入实例。
 func (c *Container) Get(interfaceObj any, name string) any {
 	return c.getValueWithName(interfaceObj, name).Interface()
@@ -129,26 +126,4 @@ func getInterfaceType(interfaceObj any) reflect.Type {
 	}
 
 	return interfaceType
-}
-
-// ===== 包级便捷函数（代理到默认容器 Default）=====
-
-// Get 从默认容器获取注入实例。
-func Get(interfaceObj any, name string) any {
-	return Default.Get(interfaceObj, name)
-}
-
-// Inject 向默认容器注入依赖。
-func Inject(instance any) {
-	Default.Inject(instance)
-}
-
-// Set 向默认容器以默认名称注册实例。
-func Set(interfaceObj any, instance any) {
-	Default.Set(interfaceObj, instance)
-}
-
-// SetWithName 向默认容器以指定名称注册实例。
-func SetWithName(interfaceObj any, name string, instance any) {
-	Default.SetWithName(interfaceObj, name, instance)
 }

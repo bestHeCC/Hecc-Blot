@@ -30,35 +30,6 @@ type composeTest struct {
 	Child iInterface `inject:"custom"`
 }
 
-func TestIocSvc(t *testing.T) {
-	Set(new(iInterface), derive{})
-	SetWithName(new(iInterface), "custom", derive{})
-
-	t.Run("default", func(t *testing.T) {
-		var d1 defaultTest
-		Inject(&d1)
-
-		assert.Equal(t, "set test", d1.One.Test())
-	})
-
-	t.Run("custom", func(t *testing.T) {
-		var d2 customTest
-		Inject(&d2)
-
-		assert.Equal(t, "set test", d2.One.Test())
-
-	})
-
-	t.Run("compose", func(t *testing.T) {
-		d3 := composeTest{}
-		Inject(&d3)
-
-		assert.Equal(t, "set test", d3.One.Test())
-		assert.Equal(t, "set test", d3.defaultTest.One.Test())
-		assert.Equal(t, "set test", d3.Child.Test())
-	})
-}
-
 func TestContainer(t *testing.T) {
 	container := New()
 	container.Set(new(iInterface), derive{})
@@ -76,5 +47,14 @@ func TestContainer(t *testing.T) {
 		container.Inject(&d2)
 
 		assert.Equal(t, "set test", d2.One.Test())
+	})
+
+	t.Run("compose", func(t *testing.T) {
+		d3 := composeTest{}
+		container.Inject(&d3)
+
+		assert.Equal(t, "set test", d3.One.Test())
+		assert.Equal(t, "set test", d3.defaultTest.One.Test())
+		assert.Equal(t, "set test", d3.Child.Test())
 	})
 }
