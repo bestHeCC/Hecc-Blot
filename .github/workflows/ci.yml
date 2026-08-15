@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: "123456"
+          MYSQL_DATABASE: core
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: "123456"
+          POSTGRES_DB: core
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U admin"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: true
+
+      - name: Install DB clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client postgresql-client
+
+      - name: Init databases
+        run: |
+          mysql -h 127.0.0.1 -uroot -p123456 core -e "CREATE TABLE IF NOT EXISTS account (id INT AUTO_INCREMENT PRIMARY KEY, account_name VARCHAR(255) DEFAULT '', password VARCHAR(255) DEFAULT '', created_at BIGINT DEFAULT 0, updated_at BIGINT DEFAULT 0, deleted_at BIGINT DEFAULT 0);"
+          PGPASSWORD=123456 psql -h 127.0.0.1 -U admin -d core -c "CREATE TABLE IF NOT EXISTS account (id SERIAL PRIMARY KEY, account_name VARCHAR(255) DEFAULT '', password VARCHAR(255) DEFAULT '', created_at BIGINT DEFAULT 0, updated_at BIGINT DEFAULT 0, deleted_at BIGINT DEFAULT 0);"
+          PGPASSWORD=123456 psql -h 127.0.0.1 -U admin -d core -c "INSERT INTO account (id, account_name) VALUES (1, 'pg') ON CONFLICT (id) DO UPDATE SET account_name = 'pg';"
+
+      - name: Build
+        run: |
+          go build ./...
+          for m in modules/*/; do
+            (cd "$m" && go build ./...)
+          done
+
+      - name: Vet
+        run: |
+          go vet ./...
+          for m in modules/*/; do
+            (cd "$m" && go vet ./...)
+          done
+
+      - name: Test
+        run: |
+          go test ./...
+          for m in modules/*/; do
+            (cd "$m" && go test ./...)
+          done
