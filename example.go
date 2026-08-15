@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bestHeCC/hecc-api"
@@ -171,7 +173,7 @@ type TokenMiddleware struct {
 	ResponseSvc iCoreApi.IResponse `inject:""`
 }
 
-func (t TokenMiddleware) Middleware() interface{} {
+func (t TokenMiddleware) Middleware() any {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
@@ -181,6 +183,21 @@ func (t TokenMiddleware) Middleware() interface{} {
 		}
 		// 实际项目可在此解析 JWT、查询用户信息等
 		c.Set("token", token)
+		c.Next()
+	}
+}
+
+// SseAcceptMiddleware SSE Accept 头校验中间件
+// 演示：策略性校验（如 Accept 头）通过中间件实现，而非框架内置
+type SseAcceptMiddleware struct{}
+
+func (m SseAcceptMiddleware) Middleware() any {
+	return func(c *gin.Context) {
+		if !strings.Contains(c.GetHeader("Accept"), "text/event-stream") {
+			c.String(http.StatusNotAcceptable, "Accept: text/event-stream required")
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }
@@ -547,38 +564,45 @@ func (e ExampleSse) Serve(ctx context.Context, w iCoreSse.Writer) error {
 // ==============================
 
 func registerRoutes(apiHandle iCoreApi.IApiHandle) {
-	// 全局中间件 — Middleware() 方法自动完成依赖注入
-	apiHandle.Middleware(&TokenMiddleware{})
+	// API 路由分组，Token 鉴权中间件仅作用于该分组（SSE 不受影响）
+	apiGroup := apiHandle.Group("", &TokenMiddleware{})
 
 	{
 		// — Section 4: 参数校验 —
-		apiHandle.Post("account/add", &AddAccountApi{})
+		apiGroup.Post("account/add", &AddAccountApi{})
 
 		// — Section 6: 数据库 CRUD —
-		apiHandle.Get("account/take", &TakeAccountApi{})
-		apiHandle.Get("account/find", &FindAccountApi{})
-		apiHandle.Get("account/count", &CountAccountApi{})
-		apiHandle.Post("account/update", &UpdateAccountApi{})
-		apiHandle.Post("account/delete", &DeleteAccountApi{})
+		apiGroup.Get("account/take", &TakeAccountApi{})
+		apiGroup.Get("account/find", &FindAccountApi{})
+		apiGroup.Get("account/count", &CountAccountApi{})
+		apiGroup.Post("account/update", &UpdateAccountApi{})
+		apiGroup.Post("account/delete", &DeleteAccountApi{})
 
 		// — Section 7: 多数据库切换 —
-		apiHandle.Get("account/db-switch", &DbSwitchApi{})
+		apiGroup.Get("account/db-switch", &DbSwitchApi{})
 
 		// — Section 8: 缓存操作 —
-		apiHandle.Get("cache/basic", &CacheBasicApi{})
-		apiHandle.Get("cache/hash", &CacheHashApi{})
-		apiHandle.Get("cache/read-through", &CacheReadThroughApi{})
+		apiGroup.Get("cache/basic", &CacheBasicApi{})
+		apiGroup.Get("cache/hash", &CacheHashApi{})
+		apiGroup.Get("cache/read-through", &CacheReadThroughApi{})
 
 		// — Section 9: 链路追踪 —
-		apiHandle.Get("trace/demo", &TraceDemoApi{})
+		apiGroup.Get("trace/demo", &TraceDemoApi{})
 
 		// — Section 10: 分页 —
-		apiHandle.Post("account/page", &PageListApi{})
-		apiHandle.Post("account/cursor", &CursorListApi{})
+		apiGroup.Post("account/page", &PageListApi{})
+		apiGroup.Post("account/cursor", &CursorListApi{})
 	}
 }
 
 func registerSseRoutes(sseHandle iCoreSse.ISseHandle) {
 	// — Section 11: SSE 推送 —
-	sseHandle.Get("events/time", &ExampleSse{})
+	// 通过中间件做 Accept 校验（策略性校验不内置在框架）
+	sseGroup := sseHandle.Group("", &SseAcceptMiddleware{})
+
+	// GET 方式：EventSource 标准用法
+	sseGroup.Get("events/time", &ExampleSse{})
+
+	// POST 方式：适用于 fetch + ReadableStream（可携带请求体）
+	sseGroup.Post("events/time", &ExampleSse{})
 }

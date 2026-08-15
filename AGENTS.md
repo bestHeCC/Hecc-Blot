@@ -99,7 +99,7 @@ return nil, errorSvc.NewError(response.Fail, err)
 ## 5. 核心机制速览
 
 - **IOC**：`container := ioc.New()` 创建容器；`container.Set(new(iCoreDb.IDbFactory), dbFactory)` 注册；`container.Inject(instance)` 注入。框架组件依赖 `IContainer` 接口，容器可替换。
-- **路由**：`IApiHandle.Get/Post` 注册，自动完成 `ShouldBind` + 校验 + 响应包装。自定义校验错误信息通过实现 `IValidator` 的 `GetMessages()`（`entity/api` 的 `Messages` map，key 为 `Field.Tag`）。
+- **路由**：`IApiHandle.Get/Post` 注册，自动完成 `ShouldBind` + 校验 + 响应包装；`IApiHandle.Group` 支持路由分组，让不同路由组使用不同中间件。自定义校验错误信息通过实现 `IValidator` 的 `GetMessages()`（`entity/api` 的 `Messages` map，key 为 `Field.Tag`）。
 - **响应**：统一 `{code, message, data}`；`code` 见 `enum/response`（`Success=10000`、`Fail=40000`、`ValidateError=40002`…）。
 - **数据库**：`IDbModel`（`GetID() int` + `TableName()`）定义模型；`IDbFactory.Build(ctx, [dbEnum.Postgres])` 取库；事务用 `Begin()/Commit()/Rollback()`（在返回的 tx 实例上调用）。
 - **缓存**：`ICacheFactory.Local()/Redis()`，本地缓存 + Redis 双层；`IBaseCache` 提供 `Set/Get/Del/Exists`。

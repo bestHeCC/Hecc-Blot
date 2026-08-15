@@ -1,0 +1,101 @@
+# Hecc-Blot 框架 API 测试集合
+# 对应 example.go 的全部路由端点
+#
+# 端口：9500（见 config.yaml 的 server.port）
+# 说明：
+#   - API 路由（account/*、cache/*、trace/*）都挂了 TokenMiddleware，需带 Authorization 头（示例只校验非空）
+#   - SSE 路由（events/time）挂了 SseAcceptMiddleware，需带 Accept: text/event-stream 头，无需 token
+
+### 1. 新增账户（含事务：新增账户 + 关联订单）
+POST http://localhost:9500/account/add
+Content-Type: application/json
+Authorization: demo
+
+{
+  "account_name": "test",
+  "password": "123456",
+  "email": "test@example.com",
+  "age": 18
+}
+
+### 2. 查询单条账户（id=1）
+GET http://localhost:9500/account/take
+Authorization: demo
+
+### 3. 查询多条账户（条件筛选 + 排序 + 字段选择）
+GET http://localhost:9500/account/find
+Authorization: demo
+
+### 4. 统计账户数
+GET http://localhost:9500/account/count
+Authorization: demo
+
+### 5. 更新账户（id=1）
+POST http://localhost:9500/account/update
+Content-Type: application/json
+Authorization: demo
+
+{
+  "account_name": "updated_name",
+  "email": "new@example.com"
+}
+
+### 6. 删除账户（id=1）
+POST http://localhost:9500/account/delete
+Content-Type: application/json
+Authorization: demo
+
+{}
+
+### 7. 多数据库切换（同时查询 MySQL 和 PostgreSQL）
+GET http://localhost:9500/account/db-switch
+Authorization: demo
+
+### 8a. 缓存基础操作（本地 + Redis 读写删）
+GET http://localhost:9500/cache/basic
+Authorization: demo
+
+### 8b. Redis Hash 操作
+GET http://localhost:9500/cache/hash
+Authorization: demo
+
+### 8c. 缓存读穿透（缓存未命中查库回写）
+GET http://localhost:9500/cache/read-through
+Authorization: demo
+
+### 9. 链路追踪示例（Span / SetAttribute / 子 Span）
+GET http://localhost:9500/trace/demo
+Authorization: demo
+
+### 10a. Offset/Limit 分页
+POST http://localhost:9500/account/page
+Content-Type: application/json
+Authorization: demo
+
+{
+  "page": 1,
+  "pageSize": 10
+}
+
+### 10b. 游标分页
+POST http://localhost:9500/account/cursor
+Content-Type: application/json
+Authorization: demo
+
+{
+  "cursor": 0,
+  "pageSize": 10
+}
+
+### 11a. SSE 推送（GET 方式，EventSource 标准用法）
+# 用 curl 测试：curl -N -H "Accept: text/event-stream" http://localhost:9500/events/time
+GET http://localhost:9500/events/time
+Accept: text/event-stream
+
+### 11b. SSE 推送（POST 方式，适用于 fetch + ReadableStream）
+# 用 curl 测试：curl -N -X POST -H "Accept: text/event-stream" http://localhost:9500/events/time
+POST http://localhost:9500/events/time
+Accept: text/event-stream
+Content-Type: application/json
+
+{}

@@ -26,6 +26,7 @@ import (
 type ApiHandle struct {
 	config      *server.Config
 	engine      *gin.Engine
+	group       *gin.RouterGroup
 	responseSvc iCoreApi.IResponse
 	container   ioc.IContainer
 }
@@ -46,11 +47,24 @@ func (f *ApiHandle) Middleware(middlewares ...iCoreApi.IMiddleware) iCoreApi.IAp
 
 		middlewareValue := iMiddleware.Middleware()
 		if middlewareValue != nil && reflect.TypeOf(middlewareValue).Kind() == reflect.Func {
-			f.engine.Use(middlewareValue.(func(*gin.Context)))
+			f.group.Use(middlewareValue.(func(*gin.Context)))
 		}
 	}
 
 	return f
+}
+
+// Group 创建路由分组，分组内的中间件仅作用于该分组。
+func (f *ApiHandle) Group(relativePath string, middlewares ...iCoreApi.IMiddleware) iCoreApi.IApiHandle {
+	group := &ApiHandle{
+		config:      f.config,
+		engine:      f.engine,
+		group:       f.group.Group(relativePath),
+		responseSvc: f.responseSvc,
+		container:   f.container,
+	}
+	group.Middleware(middlewares...)
+	return group
 }
 
 func (f *ApiHandle) Get(apiPath string, apiInstance any) {
@@ -133,9 +147,9 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance any, method string) 
 
 		switch method {
 		case http.MethodGet:
-			f.engine.GET(apiPath, handler)
+			f.group.GET(apiPath, handler)
 		case http.MethodPost:
-			f.engine.POST(apiPath, handler)
+			f.group.POST(apiPath, handler)
 		default:
 			panic(
 				fmt.Sprintf("无效http请求类型，%s", method),
@@ -162,6 +176,7 @@ func NewApiSvc(config *server.Config, responseSvc iCoreApi.IResponse, traceSvc i
 	apiHandle := &ApiHandle{
 		config:      config,
 		engine:      app,
+		group:       &app.RouterGroup,
 		responseSvc: responseSvc,
 		container:   container,
 	}

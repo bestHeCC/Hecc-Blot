@@ -19,13 +19,15 @@ type Writer interface {
 // modules/core/contract/sse/sse_handler.go
 type ISseHandle interface {
     Get(apiPath string, sse ISse)
+    Post(apiPath string, sse ISse)
     Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
+    Group(relativePath string, middlewares ...iCoreApi.IMiddleware) ISseHandle
 }
 ```
 
 SSE 复用 `modules/core/contract/api` 中的 `IMiddleware` 接口，无需单独定义中间件接口。
 
-框架在底层封装了 `http.Flusher` 断言、心跳保活、并发锁、`Accept: text/event-stream` 校验、连接数上限与错误帧格式化，业务只需通过 `Writer` 写入、通过 `ctx` 感知连接断开。
+框架在底层封装了 `http.Flusher` 断言、心跳保活、并发锁、连接数上限与错误帧格式化，业务只需通过 `Writer` 写入、通过 `ctx` 感知连接断开。策略性校验（如 `Accept` 头）建议通过中间件实现。
 
 ## 初始化
 
@@ -90,7 +92,9 @@ SSE 处理器接口定义在 `modules/core/contract/sse/sse_handler.go`：
 ```go
 type ISseHandle interface {
     Get(apiPath string, sse ISse)
+    Post(apiPath string, sse ISse)
     Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
+    Group(relativePath string, middlewares ...iCoreApi.IMiddleware) ISseHandle
 }
 ```
 
@@ -99,7 +103,7 @@ type ISseHandle interface {
 **请求处理流程：**
 
 ```
-请求 → [中间件链] → [Accept/Flusher 校验] → [连接数限流] → [设置SSE响应头] → [Serve()] → [持续推送事件]
+请求 → [中间件链] → [Flusher 断言] → [连接数限流] → [设置SSE响应头] → [Serve()] → [持续推送事件]
                                                                               ↓
                                                                    客户端断开 / 心跳失败 / Serve 返回 error
                                                                               ↓
@@ -112,7 +116,7 @@ type ISseHandle interface {
 - **连接数上限**: 超出上限返回 503
 - **心跳保活**: 每 30s 发送 SSE comment，写入失败自动取消连接
 - **Flusher 断言**: Writer 不支持流式时返回 500
-- **Accept 校验**: 缺失 `text/event-stream` 返回 406
+- **Accept 校验**: 建议通过中间件实现（见 `example.go` 的 `SseAcceptMiddleware`），框架不内置
 - **Last-Event-Id**: 提取请求头，通过 `w.LastEventID()` 暴露给业务做断线续传
 
 ## 完整示例

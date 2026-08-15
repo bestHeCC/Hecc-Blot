@@ -42,6 +42,7 @@ type IApiHandle interface {
     Get(apiPath string, api interface{})
     Post(apiPath string, api interface{})
     Middleware(middlewares ...IMiddleware) IApiHandle
+    Group(relativePath string, middlewares ...IMiddleware) IApiHandle
     Listen()
     Engine() *gin.Engine
 }
@@ -54,7 +55,7 @@ type IApiHandle interface {
 responseSvc := api.NewResponseSvc()
 
 // 创建 API 处理器
-apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 ```
 
 ### 3. 注册路由
@@ -137,6 +138,14 @@ apiHandle.Middleware(
 ```
 
 **执行顺序**: 按照注册顺序依次执行
+
+**分组注册**: 通过 `Group` 让中间件仅作用于指定分组，不同路由组使用不同中间件：
+
+```go
+// API 分组挂 Token 鉴权，SSE 路由不受影响
+apiGroup := apiHandle.Group("", &TokenMiddleware{})
+apiGroup.Post("account/add", &AddApi{})
+```
 
 ***
 
