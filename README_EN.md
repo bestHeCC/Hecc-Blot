@@ -151,7 +151,7 @@ If Hecc-Blot helps you, a ⭐️ is appreciated.
 
 ### Feedback & Contributing
 
-- **Bug reports and feature requests**: open an [Issue](https://gitee.com/bestHeCC/Hecc-Blot/issues)
+- **Bug reports and feature requests**: open an [Issue](https://github.com/bestHeCC/Hecc-Blot/issues)
 - **Code contributions**: pull requests are welcome
 
 ### Credits

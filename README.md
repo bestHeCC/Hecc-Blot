@@ -149,7 +149,7 @@ go mod tidy
 
 ### 反馈与贡献
 
-- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/Hecc-Blot/issues)
+- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://github.com/bestHeCC/Hecc-Blot/issues)
 - **代码贡献**: 欢迎提交 Pull Request
 
 ### 致谢
