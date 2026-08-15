@@ -6,6 +6,18 @@
 
 Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口的设计理念，提供依赖注入、路由注册、参数校验、统一响应等核心功能。
 
+## 获取代码
+
+项目同时托管在 GitHub 与 Gitee，任选其一克隆即可：
+
+```bash
+# GitHub
+git clone https://github.com/bestHeCC/Hecc-Blot.git
+
+# Gitee
+git clone https://gitee.com/bestHeCC/hecc-go-core.git
+```
+
 ## 框架特性
 
 - **面向接口**: 所有组件通过接口契约交互，易于替换和扩展
