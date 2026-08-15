@@ -1,22 +1,12 @@
 # Hecc-Blot
 
-[![Go Version](https://img.shields.io/badge/Go-1.26.1-blue)](https://github.com/bestHeCC/Hecc-Blot)
+[![Go Version](https://img.shields.io/badge/Go-1.26.1-00ADD8?logo=go&logoColor=white)](https://github.com/bestHeCC/Hecc-Blot)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Gitee Repo](https://img.shields.io/badge/Gitee-hecc--go--core-red)](https://gitee.com/bestHeCC/hecc-go-core)
+[![GitHub](https://img.shields.io/badge/GitHub-Hecc--Blot-181717?logo=github&logoColor=white)](https://github.com/bestHeCC/Hecc-Blot)
+[![Gitee](https://img.shields.io/badge/Gitee-Hecc--Blot-C71D23?logo=gitee&logoColor=white)](https://gitee.com/bestHeCC/Hecc-Blot)
+[![简体中文](https://img.shields.io/badge/简体中文-README-blue)](README.md)
 
 Hecc-Blot is a lightweight Go backend framework built around interface-oriented design, providing dependency injection, route registration, parameter validation, and unified responses.
-
-## Getting the Code
-
-The project is mirrored on both GitHub and Gitee — clone from either:
-
-```bash
-# GitHub
-git clone https://github.com/bestHeCC/Hecc-Blot.git
-
-# Gitee
-git clone https://gitee.com/bestHeCC/hecc-go-core.git
-```
 
 ## Features
 
@@ -161,7 +151,7 @@ If Hecc-Blot helps you, a ⭐️ is appreciated.
 
 ### Feedback & Contributing
 
-- **Bug reports and feature requests**: open an [Issue](https://gitee.com/bestHeCC/hecc-go-core/issues)
+- **Bug reports and feature requests**: open an [Issue](https://gitee.com/bestHeCC/Hecc-Blot/issues)
 - **Code contributions**: pull requests are welcome
 
 ### Credits

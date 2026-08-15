@@ -1,22 +1,12 @@
 # Hecc-Blot
 
-[![Go Version](https://img.shields.io/badge/Go-1.26.1-blue)](https://github.com/bestHeCC/Hecc-Blot)
+[![Go Version](https://img.shields.io/badge/Go-1.26.1-00ADD8?logo=go&logoColor=white)](https://github.com/bestHeCC/Hecc-Blot)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Gitee Repo](https://img.shields.io/badge/Gitee-hecc--go--core-red)](https://gitee.com/bestHeCC/hecc-go-core)
+[![GitHub](https://img.shields.io/badge/GitHub-Hecc--Blot-181717?logo=github&logoColor=white)](https://github.com/bestHeCC/Hecc-Blot)
+[![Gitee](https://img.shields.io/badge/Gitee-Hecc--Blot-C71D23?logo=gitee&logoColor=white)](https://gitee.com/bestHeCC/Hecc-Blot)
+[![English](https://img.shields.io/badge/English-README_EN-blue)](README_EN.md)
 
 Hecc-Blot 是一个基于 Go 语言的轻量级后端框架，采用面向接口的设计理念，提供依赖注入、路由注册、参数校验、统一响应等核心功能。
-
-## 获取代码
-
-项目同时托管在 GitHub 与 Gitee，任选其一克隆即可：
-
-```bash
-# GitHub
-git clone https://github.com/bestHeCC/Hecc-Blot.git
-
-# Gitee
-git clone https://gitee.com/bestHeCC/hecc-go-core.git
-```
 
 ## 框架特性
 
@@ -159,7 +149,7 @@ go mod tidy
 
 ### 反馈与贡献
 
-- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/hecc-go-core/issues)
+- **Bug 反馈和功能建议**: 欢迎提交 [Issue](https://gitee.com/bestHeCC/Hecc-Blot/issues)
 - **代码贡献**: 欢迎提交 Pull Request
 
 ### 致谢
