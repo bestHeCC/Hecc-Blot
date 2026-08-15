@@ -7,3 +7,4 @@ modules/db/runtime/
 modules/log/runtime/
 *.exe
 .claude/
+hecc-blot.exe
