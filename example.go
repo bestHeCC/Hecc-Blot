@@ -68,10 +68,10 @@ func main() {
 	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 	registerRoutes(apiHandle)
 
-	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container, traceSvc)
 	registerSseRoutes(sseHandle)
 
-	apiHandle.Listen()
+	apiHandle.Listen(sseHandle.Shutdown)
 }
 
 // must 单返回值错误处理：出错直接 panic
@@ -196,6 +196,23 @@ func (m SseAcceptMiddleware) Middleware() any {
 		if !strings.Contains(c.GetHeader("Accept"), "text/event-stream") {
 			c.String(http.StatusNotAcceptable, "Accept: text/event-stream required")
 			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// SseCorsMiddleware SSE CORS 中间件
+// 演示：浏览器 EventSource 跨域需要 CORS 响应头，策略性配置通过中间件实现
+type SseCorsMiddleware struct{}
+
+func (m SseCorsMiddleware) Middleware() any {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Accept, Content-Type, Last-Event-Id")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 		c.Next()
@@ -598,7 +615,7 @@ func registerRoutes(apiHandle iCoreApi.IApiHandle) {
 func registerSseRoutes(sseHandle iCoreSse.ISseHandle) {
 	// — Section 11: SSE 推送 —
 	// 通过中间件做 Accept 校验（策略性校验不内置在框架）
-	sseGroup := sseHandle.Group("", &SseAcceptMiddleware{})
+	sseGroup := sseHandle.Group("", &SseAcceptMiddleware{}, &SseCorsMiddleware{})
 
 	// GET 方式：EventSource 标准用法
 	sseGroup.Get("events/time", &ExampleSse{})

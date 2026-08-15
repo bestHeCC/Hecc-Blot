@@ -22,6 +22,8 @@ type ISseHandle interface {
     Post(apiPath string, sse ISse)
     Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
     Group(relativePath string, middlewares ...iCoreApi.IMiddleware) ISseHandle
+    Stats() Stats
+    Shutdown()
 }
 ```
 
@@ -38,7 +40,7 @@ SSE 服务与 API 服务共享 Engine，创建时传入 API 的 Engine：
 apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
 
 // 创建 SSE 处理器，共享 API 的 Engine
-sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+sseHandle := sse.NewSseSvc(apiHandle.Engine(), container, traceSvc)
 
 // 启动服务（仅 API 调用 Listen，SSE 共享同一端口）
 apiHandle.Listen()
@@ -95,6 +97,8 @@ type ISseHandle interface {
     Post(apiPath string, sse ISse)
     Middleware(middlewares ...iCoreApi.IMiddleware) ISseHandle
     Group(relativePath string, middlewares ...iCoreApi.IMiddleware) ISseHandle
+    Stats() Stats
+    Shutdown()
 }
 ```
 
@@ -118,6 +122,9 @@ type ISseHandle interface {
 - **Flusher 断言**: Writer 不支持流式时返回 500
 - **Accept 校验**: 建议通过中间件实现（见 `example.go` 的 `SseAcceptMiddleware`），框架不内置
 - **Last-Event-Id**: 提取请求头，通过 `w.LastEventID()` 暴露给业务做断线续传
+- **连接统计**: `Stats()` 返回活跃/总数/断开连接数，便于排障与容量规划
+- **优雅关闭**: `Shutdown()` 通知所有活跃连接发送 shutdown 帧后断开，配合 `apiHandle.Listen(sseHandle.Shutdown)` 使用
+- **链路追踪**: 传入 traceSvc 时为连接创建 `sse.connection` span，业务通过 ctx 关联追踪
 
 ## 完整示例
 
@@ -135,7 +142,7 @@ func main() {
     apiHandle.Post("example/api", &ExampleApi{})
 
     // 注册 SSE 路由（共享 Engine）
-    sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+    sseHandle := sse.NewSseSvc(apiHandle.Engine(), container, traceSvc)
     sseHandle.Middleware(&TokenMiddleware{})
     sseHandle.Get("example/sse", &ExampleSse{})
 

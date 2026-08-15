@@ -75,7 +75,7 @@ func (f *ApiHandle) Post(apiPath string, apiInstance any) {
 	f.registerAPI(apiPath, apiInstance, http.MethodPost)
 }
 
-func (f *ApiHandle) Listen() {
+func (f *ApiHandle) Listen(onShutdown ...func()) {
 	readTimeout := f.config.ReadTimeout
 	writeTimeout := f.config.WriteTimeout
 	idleTimeout := f.config.IdleTimeout
@@ -109,6 +109,11 @@ func (f *ApiHandle) Listen() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	fmt.Println("Shutting down server...")
+
+	// 优雅关闭：先执行关闭钩子（如通知 SSE 客户端优雅断开），再关闭 HTTP 服务
+	for _, fn := range onShutdown {
+		fn()
+	}
 
 	// 创建一个5秒的超时上下文
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
