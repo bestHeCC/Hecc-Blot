@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bestHeCC/hecc-db/config"
+	dbConf "github.com/bestHeCC/hecc-db/config"
 	logConf "github.com/bestHeCC/hecc-log/config"
 	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
 	"github.com/bestHeCC/hecc-log"
@@ -13,12 +13,12 @@ import (
 	"gorm.io/plugin/soft_delete"
 )
 
-var dbConfig = &db.Config{
+var dbConfig = &dbConf.Config{
 	Mysql:    mysqlConf,
 	Postgres: postgresConfig,
 }
 
-var mysqlConf = db.MysqlConfig{
+var mysqlConf = dbConf.MysqlConfig{
 	Ip:              "127.0.0.1",
 	Port:            3306,
 	Username:        "root",
@@ -31,7 +31,7 @@ var mysqlConf = db.MysqlConfig{
 	SlowThreshold:   200,
 }
 
-var postgresConfig = db.PostgresConfig{
+var postgresConfig = dbConf.PostgresConfig{
 	Ip:              "127.0.0.1",
 	Port:            5432,
 	Username:        "admin",

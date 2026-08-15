@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bestHeCC/hecc-cache/config"
+	cacheConfig "github.com/bestHeCC/hecc-cache/config"
 	"github.com/bestHeCC/hecc-trace"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ var (
 	fail  = 0
 )
 
-var mockConf = cache.Local{
+var mockConf = cacheConfig.Local{
 	ClearInterval: 1,
 }
 

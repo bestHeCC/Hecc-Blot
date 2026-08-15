@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bestHeCC/hecc-cache/config"
+	cacheConfig "github.com/bestHeCC/hecc-cache/config"
 	traceConf "github.com/bestHeCC/hecc-trace/config"
 	"github.com/bestHeCC/hecc-trace"
 
@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockRedisConf = cache.Redis{
+var mockRedisConf = cacheConfig.Redis{
 	Addr:     "127.0.0.1:6379",
 	Password: "",
 	PoolSize: 10,
