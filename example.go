@@ -36,7 +36,7 @@ import (
 // 详见：docs/quick_start.md
 
 func main() {
-	config := initConf("/config.yaml")
+	config := initConf("config.yaml")
 
 	logSvc := must(log.NewLogger(&config.Log))
 	traceSvc, traceClearUp := must2(trace.NewTraceSvc(&config.Trace))
