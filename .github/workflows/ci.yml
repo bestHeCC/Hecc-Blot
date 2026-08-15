@@ -67,6 +67,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -p123456 core -e "CREATE TABLE IF NOT EXISTS account (id INT AUTO_INCREMENT PRIMARY KEY, account_name VARCHAR(255) DEFAULT '', password VARCHAR(255) DEFAULT '', created_at BIGINT DEFAULT 0, updated_at BIGINT DEFAULT 0, deleted_at BIGINT DEFAULT 0);"
           PGPASSWORD=123456 psql -h 127.0.0.1 -U admin -d core -c "CREATE TABLE IF NOT EXISTS account (id SERIAL PRIMARY KEY, account_name VARCHAR(255) DEFAULT '', password VARCHAR(255) DEFAULT '', created_at BIGINT DEFAULT 0, updated_at BIGINT DEFAULT 0, deleted_at BIGINT DEFAULT 0);"
           PGPASSWORD=123456 psql -h 127.0.0.1 -U admin -d core -c "INSERT INTO account (id, account_name) VALUES (1, 'pg') ON CONFLICT (id) DO UPDATE SET account_name = 'pg';"
+          PGPASSWORD=123456 psql -h 127.0.0.1 -U admin -d core -c "SELECT setval(pg_get_serial_sequence('account', 'id'), (SELECT MAX(id) FROM account));"
 
       - name: Build
         run: |
