@@ -55,7 +55,7 @@ type IApiHandle interface {
 responseSvc := api.NewResponseSvc()
 
 // 创建 API 处理器
-apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
 ```
 
 ### 3. 注册路由
@@ -305,7 +305,7 @@ func main() {
     container.Set(new(iCoreTrace.ITrace), traceSvc)
     
     // 创建 API 处理器
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
     
     // 注册路由和中间件
     register(apiHandle)
@@ -352,7 +352,6 @@ server:
   port: "9500"
   env: dev                 # dev | test | product
   name: Hecc-Blot          # 服务名称
-  enable_trace: true       # 是否开启链路追踪
   read_timeout: 30         # 读取超时（秒）
   write_timeout: 30        # 写入超时（秒）
   idle_timeout: 60         # 空闲超时（秒）
@@ -367,7 +366,8 @@ server:
 |--------|------|
 | `gin.Recovery()` | 捕获 handler panic，返回 500 而非进程崩溃 |
 | `bodySizeLimit` | 限制请求体大小，防止大 payload 攻击，默认 10MB |
-| `HttpTraceMiddleware` | 仅在 `config.Server.EnableTrace` 为 true 时启用，自动追踪每个 HTTP 请求 |
+
+> 链路追踪中间件不再自动注册，请通过 `trace.NewHttpMiddleware(traceSvc)` 显式注册，详见 [链路追踪](trace.md)。
 
 ### 环境模式映射
 

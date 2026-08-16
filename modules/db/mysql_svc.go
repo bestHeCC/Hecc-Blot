@@ -31,6 +31,9 @@ func newMysqlSvc(config *dbConf.MysqlConfig, logger log.ILog) (dbContract.IDb, f
 		return nil, func() {}, err
 	}
 
+	// 注册 OpenTelemetry 追踪插件，SQL 执行自动生成 span
+	useOtelPlugin(mysqlDb)
+
 	sqlDb, err := mysqlDb.DB()
 	if err != nil {
 		return nil, func() {}, err

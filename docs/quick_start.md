@@ -18,7 +18,6 @@ server:
   port: "9500"
   env: dev
   name: Hecc-Blot
-  enable_trace: true
   read_timeout: 30
   write_timeout: 30
   idle_timeout: 60
@@ -232,7 +231,8 @@ func main() {
     container.Set(new(iCoreTrace.ITrace), traceSvc)
 
     // 8. 创建 API 处理器并注册路由
-    apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
+    apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
+    apiHandle.Middleware(trace.NewHttpMiddleware(traceSvc))
     apiHandle.Middleware(&TokenMiddleware{})
 	{
 	apiHandle.Post("account/add", &AddAccountApi{})
@@ -240,7 +240,8 @@ func main() {
     }
 
     // 9. 注册 SSE 路由（可选，需要时使用）
-    sseHandle := sse.NewSseSvc(apiHandle.Engine())
+    sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+    sseHandle.Middleware(trace.NewSseMiddleware(traceSvc))
     sseHandle.Middleware(&TokenMiddleware{})
     {
         sseHandle.Get("events/time", &TimeSse{})

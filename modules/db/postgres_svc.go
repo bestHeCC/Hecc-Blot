@@ -31,6 +31,9 @@ func newPostgresSvc(config *dbConf.PostgresConfig, logger log.ILog) (dbContract.
 		return nil, func() {}, err
 	}
 
+	// 注册 OpenTelemetry 追踪插件，SQL 执行自动生成 span
+	useOtelPlugin(postgresDb)
+
 	sqlDb, err := postgresDb.DB()
 	if err != nil {
 		return nil, func() {}, err

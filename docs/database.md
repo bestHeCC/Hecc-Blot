@@ -211,6 +211,42 @@ mysqlDB := dbFactory.Build(ctx, dbEnum.Mysql)
 pgDB := dbFactory.Build(ctx, dbEnum.Postgres)
 ```
 
+## SQL 链路追踪
+
+数据库组件通过 GORM 的 OpenTelemetry 插件自动为 SQL 执行生成 span，可在 Jaeger 等追踪系统中查看每条 SQL 语句。
+
+### 记录内容
+
+| 属性 | 说明 |
+|------|------|
+| `db.system` | 数据库类型（`mysql` / `postgresql`），自动从驱动探测 |
+| `db.statement` | 完整 SQL 语句（变量已替换） |
+| `db.operation` | 操作类型（`select` / `insert` / `update` / `delete`） |
+| `db.query.summary` | 操作 + 表名（如 `select account`），同时作为 span 名称 |
+| `db.rows_affected` | 影响行数 |
+
+### 依赖关系
+
+db 模块**只依赖第三方** `gorm.io/plugin/opentelemetry` 插件，通过全局 `TracerProvider` 生成 span，**不依赖 hecc-trace 模块**，避免扩展间耦合。插件在 `NewDbFactory` 初始化时自动注册，业务代码无需任何改动。
+
+### 初始化顺序
+
+由于插件在创建时捕获全局 `TracerProvider`，**必须先初始化 trace 再初始化 db**：
+
+```go
+// ✅ 正确顺序
+traceSvc, traceClearUp, err := trace.NewTraceSvc(&config.Trace)  // 1. 先设置全局 provider
+dbFactory, dbClearUp, err := db.NewDbFactory(&config.Db, logSvc) // 2. 再初始化 db
+```
+
+```go
+// ❌ 错误顺序：trace 初始化晚于 db，SQL span 会丢失
+dbFactory, dbClearUp, err := db.NewDbFactory(&config.Db, logSvc)
+traceSvc, traceClearUp, err := trace.NewTraceSvc(&config.Trace)
+```
+
+未初始化 trace 时，全局 provider 为空操作（noop），SQL span 自动失效，无额外开销。
+
 ## 在 API 中使用
 
 通过 IOC 注入 `IDbFactory`，每次请求从 Context 获取数据库实例：

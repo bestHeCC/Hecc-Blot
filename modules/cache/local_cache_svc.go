@@ -31,20 +31,22 @@ type memCacheVal struct {
 	expire time.Duration
 }
 
+// startSpan 统一创建 trace span，traceSvc 为空时返回 noopSpan
+func (c *localCacheSvc) startSpan(ctx context.Context, name string, extra ...interface{}) (context.Context, trace.Span) {
+	if c.traceSvc == nil {
+		return ctx, noopSpan{}
+	}
+	attrs := make([]interface{}, 0, len(extra))
+	attrs = append(attrs, extra...)
+	return c.traceSvc.Start(ctx, name, attrs...)
+}
+
 // Set 将value写入缓存
 func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, expire time.Duration) error {
 	ctx = util.ExtractContext(ctx)
-
-	if c.traceSvc != nil {
-		_, span := c.traceSvc.Start(ctx, "localCache.SET",
-			"cache.type", "local",
-			"cache.operation", "SET",
-			"cache.key", key,
-		)
-		defer span.End()
-		c.set(key, val, expire)
-		return nil
-	}
+	_, span := c.startSpan(ctx, "localCache.SET",
+		"cache.type", "local", "cache.operation", "SET", "cache.key", key)
+	defer span.End()
 	c.set(key, val, expire)
 	return nil
 }
@@ -52,21 +54,9 @@ func (c *localCacheSvc) Set(ctx context.Context, key string, val interface{}, ex
 // Get 根据key值获取value
 func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error) {
 	ctx = util.ExtractContext(ctx)
-
-	if c.traceSvc != nil {
-		_, span := c.traceSvc.Start(ctx, "localCache.GET",
-			"cache.type", "local",
-			"cache.operation", "GET",
-			"cache.key", key,
-		)
-		defer span.End()
-		result, ok := c.get(key)
-		if !ok {
-			return nil, nil
-		}
-		return result.content, nil
-	}
-
+	_, span := c.startSpan(ctx, "localCache.GET",
+		"cache.type", "local", "cache.operation", "GET", "cache.key", key)
+	defer span.End()
 	result, ok := c.get(key)
 	if !ok {
 		return nil, nil
@@ -77,17 +67,9 @@ func (c *localCacheSvc) Get(ctx context.Context, key string) (interface{}, error
 // Del 删除key值
 func (c *localCacheSvc) Del(ctx context.Context, key string) error {
 	ctx = util.ExtractContext(ctx)
-
-	if c.traceSvc != nil {
-		_, span := c.traceSvc.Start(ctx, "localCache.DEL",
-			"cache.type", "local",
-			"cache.operation", "DEL",
-			"cache.key", key,
-		)
-		defer span.End()
-		c.delWithLock(key)
-		return nil
-	}
+	_, span := c.startSpan(ctx, "localCache.DEL",
+		"cache.type", "local", "cache.operation", "DEL", "cache.key", key)
+	defer span.End()
 	c.delWithLock(key)
 	return nil
 }
@@ -95,18 +77,9 @@ func (c *localCacheSvc) Del(ctx context.Context, key string) error {
 // Exists 判断key是否存在
 func (c *localCacheSvc) Exists(ctx context.Context, key string) (bool, error) {
 	ctx = util.ExtractContext(ctx)
-
-	if c.traceSvc != nil {
-		_, span := c.traceSvc.Start(ctx, "localCache.EXISTS",
-			"cache.type", "local",
-			"cache.operation", "EXISTS",
-			"cache.key", key,
-		)
-		defer span.End()
-		_, ok := c.get(key)
-		return ok, nil
-	}
-
+	_, span := c.startSpan(ctx, "localCache.EXISTS",
+		"cache.type", "local", "cache.operation", "EXISTS", "cache.key", key)
+	defer span.End()
 	_, ok := c.get(key)
 	return ok, nil
 }

@@ -33,6 +33,29 @@ graph TD
 
 ***
 
+## 并发约定（最高级约定）
+
+> ⚠️ **最高级约定**：本约定是整个 IOC 容器使用中优先级最高的约束，其他任何规则均不得与之冲突，违反本约定会导致数据竞争。
+
+`Container` 内部 `values` map **不加锁**，依赖以下约定保证并发安全：
+
+- **`Set` / `SetWithName` 仅允许在启动初始化阶段调用**（单线程，先注册后启动）；
+- 初始化完成后容器进入**只读**，此时 `Get` / `Inject` 可安全并发调用；
+- **运行时禁止再 `Set`**，否则会导致数据竞争。
+
+```go
+container := ioc.New()
+
+// 初始化阶段：集中注册，此时尚未启动服务
+container.Set(new(iCoreLog.ILog), logSvc)
+container.Set(new(iCoreDb.IDbFactory), dbFactory)
+
+// 运行阶段：只读并发调用 Get / Inject，不再 Set
+apiHandle.Listen()
+```
+
+***
+
 ## IOC 核心实现
 
 ### 1. 核心数据结构

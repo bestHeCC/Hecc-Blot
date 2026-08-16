@@ -6,12 +6,14 @@ import (
 	"time"
 
 	dbContract "github.com/bestHeCC/hecc-db/contract"
+	"github.com/bestHeCC/hecc-core/util"
 	"github.com/bestHeCC/hecc-log/contract"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 // BaseDbSvc 数据库服务基类
@@ -127,6 +129,7 @@ func (b *BaseDbSvc) Find(dst interface{}) error {
 
 // WithContext 设置上下文
 func (b *BaseDbSvc) WithContext(ctx context.Context) {
+	ctx = util.ExtractContext(ctx)
 	b.ctx = ctx
 	b.db = b.db.WithContext(ctx)
 }
@@ -145,6 +148,18 @@ func initGormConfig(logger log.ILog, slowThreshold int) *gorm.Config {
 		DisableForeignKeyConstraintWhenMigrating: true,
 		Logger:                                   newILogGormLogger(logger, slowThreshold),
 	}
+}
+
+// useOtelPlugin 为 GORM 注册 OpenTelemetry 追踪插件，SQL 执行自动生成 span。
+//
+// 插件通过全局 TracerProvider（由 hecc-trace 模块初始化时设置）创建 span，
+// 自动记录 db.system / db.statement / db.operation / db.query.summary 等属性，
+// 并以「operation + 表名」作为 span 名（如 select account）。
+// 未初始化 trace 时全局 provider 为 noop，span 为空操作，无额外开销。
+//
+// db 模块只依赖第三方 otel 插件，不依赖 hecc-trace，避免扩展间耦合。
+func useOtelPlugin(db *gorm.DB) {
+	db.Use(tracing.NewPlugin(tracing.WithoutMetrics()))
 }
 
 // setSqlDbPool 设置数据库连接池配置

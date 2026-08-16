@@ -13,7 +13,6 @@ import (
 
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
 	"github.com/bestHeCC/hecc-core/contract/ioc"
-	"github.com/bestHeCC/hecc-trace/contract"
 	serverConfig "github.com/bestHeCC/hecc-api/config"
 	envEnum "github.com/bestHeCC/hecc-core/enum/env"
 	"github.com/bestHeCC/hecc-core/enum/response"
@@ -163,7 +162,7 @@ func (f *ApiHandle) registerAPI(apiPath string, apiInstance any, method string) 
 	}
 }
 
-func NewApiSvc(config *serverConfig.Config, responseSvc iCoreApi.IResponse, traceSvc trace.ITrace, container ioc.IContainer) iCoreApi.IApiHandle {
+func NewApiSvc(config *serverConfig.Config, responseSvc iCoreApi.IResponse, container ioc.IContainer) iCoreApi.IApiHandle {
 	mode, ok := mapEnv[config.Env]
 	if !ok {
 		panic(fmt.Sprintf("无效环境配置:%s", mode))
@@ -184,14 +183,6 @@ func NewApiSvc(config *serverConfig.Config, responseSvc iCoreApi.IResponse, trac
 		group:       &app.RouterGroup,
 		responseSvc: responseSvc,
 		container:   container,
-	}
-
-	if traceSvc != nil {
-		// 开启链路追踪
-		traceMiddleware := &HttpTraceMiddleware{
-			TraceSvc: traceSvc,
-		}
-		apiHandle.Middleware(traceMiddleware)
 	}
 
 	return apiHandle

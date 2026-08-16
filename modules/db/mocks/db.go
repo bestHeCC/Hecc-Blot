@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
+	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 	dbContract "github.com/bestHeCC/hecc-db/contract"
 )
 

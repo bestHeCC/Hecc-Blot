@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
+	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 )
 
 type IDbFactory interface {

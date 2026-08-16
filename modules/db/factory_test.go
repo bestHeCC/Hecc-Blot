@@ -2,14 +2,19 @@ package db
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
+	dbContract "github.com/bestHeCC/hecc-db/contract"
 	dbConf "github.com/bestHeCC/hecc-db/config"
+	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 	logConf "github.com/bestHeCC/hecc-log/config"
-	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
 	"github.com/bestHeCC/hecc-log"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"gorm.io/plugin/soft_delete"
 )
 
@@ -70,6 +75,30 @@ type Account struct {
 
 func (b Account) GetID() int {
 	return b.ID
+}
+
+// TestBuildExtractsGinContext 验证 Build 会将 *gin.Context 提取为 Request.Context()。
+// 若不提取，GORM otel 插件从 *gin.Context 读不到父 span（gin 的 Value 默认不委托到
+// Request.Context()），SQL 会变成独立 trace。
+func TestBuildExtractsGinContext(t *testing.T) {
+	gormDB, err := gorm.Open(mysql.Open("root:123456@tcp(127.0.0.1:3306)/core"), &gorm.Config{})
+	assert.NoError(t, err)
+
+	f := Factory{
+		db:        map[dbEnum.Value]dbContract.IDb{dbEnum.Mysql: &BaseDbSvc{db: gormDB}},
+		defaultDb: dbEnum.Mysql,
+	}
+
+	// 模拟 trace 中间件：父 span 等信息存放在 Request.Context() 中
+	req := (&http.Request{}).WithContext(context.WithValue(context.Background(), "trace.parent", "span"))
+	ginCtx := &gin.Context{Request: req}
+
+	clone := f.Build(ginCtx)
+
+	stmtCtx := clone.GetInstance().(*gorm.DB).Statement.Context
+	_, isGin := stmtCtx.(*gin.Context)
+	assert.False(t, isGin)
+	assert.Equal(t, "span", stmtCtx.Value("trace.parent"))
 }
 
 func TestFactory(t *testing.T) {

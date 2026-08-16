@@ -13,7 +13,7 @@ import (
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
 	iCoreError "github.com/bestHeCC/hecc-core/contract/error"
 	entityApi "github.com/bestHeCC/hecc-core/entity/api"
-	dbEnum "github.com/bestHeCC/hecc-core/enum/db"
+	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 	"github.com/bestHeCC/hecc-core/enum/response"
 	"github.com/bestHeCC/hecc-core/util"
 	"github.com/bestHeCC/hecc-db"
@@ -64,10 +64,13 @@ func main() {
 	container.Set(new(iCoreApi.IResponse), responseSvc)
 	container.Set(new(traceContract.ITrace), traceSvc)
 
-	apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc, container)
+	apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
+	// 链路追踪：由组装层显式注册中间件（api 不感知 trace）
+	apiHandle.Middleware(trace.NewHttpMiddleware(traceSvc))
 	registerRoutes(apiHandle)
 
-	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container, traceSvc)
+	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+	sseHandle.Middleware(trace.NewSseMiddleware(traceSvc))
 	registerSseRoutes(sseHandle)
 
 	apiHandle.Listen(sseHandle.Shutdown)

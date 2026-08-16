@@ -39,7 +39,7 @@ trace:
 
 ```go
 import (
-    iCoreTrace "github.com/bestHeCC/hecc-core/contract/trace"
+    traceContract "github.com/bestHeCC/hecc-trace/contract"
     "github.com/bestHeCC/hecc-trace"
 )
 
@@ -59,7 +59,7 @@ defer traceClearUp()
 ```go
 type YourApi struct {
     // 通过 inject tag 自动注入
-    TraceSvc iCoreTrace.ITrace `inject:""`
+    TraceSvc traceContract.ITrace `inject:""`
 }
 
 func (y YourApi) Call(ctx *gin.Context) (interface{}, error) {
@@ -102,13 +102,18 @@ func (y YourApi) Call(ctx *gin.Context) (interface{}, error) {
 
 ### HttpTraceMiddleware
 
-框架提供默认 `HttpTraceMiddleware`，自动追踪所有 HTTP 请求。创建 API 服务时传入 `traceSvc` 即可开启链路追踪。
+框架提供 `HttpTraceMiddleware` 与 `SseTraceMiddleware`，分别通过 `trace.NewHttpMiddleware(traceSvc)` / `trace.NewSseMiddleware(traceSvc)` 在组装阶段注册到 api / sse 处理器，即可开启链路追踪。
 
 ### 使用方式
 
 ```go
-// 创建 API 服务时显式传入 traceSvc
-apiHandle := api.NewApiSvc(&config.Server, responseSvc, traceSvc)
+// 创建 API / SSE 处理器
+apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
+sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
+
+// 注册链路追踪中间件
+apiHandle.Middleware(trace.NewHttpMiddleware(traceSvc))
+sseHandle.Middleware(trace.NewSseMiddleware(traceSvc))
 
 // 注册路由
 register(apiHandle)
@@ -127,6 +132,8 @@ apiHandle.Listen()
 4. **响应头注入**：
    - `X-Trace-Id`: 当前请求的 Trace ID
    - `traceparent`: W3C Trace Context 格式的追踪上下文
+
+SSE 连接由 `SseTraceMiddleware` 以 `sse.connection` 为 span 名称追踪，同样注入 `X-Trace-Id` 与 `traceparent` 响应头，行为与 HTTP 中间件一致。
 
 ## 日志集成
 
@@ -161,3 +168,4 @@ req.Header.Set("traceparent", c.GetHeader("traceparent"))
 | [配置说明](config.md) | Trace 配置项 |
 | [日志组件](logging.md) | TraceId 自动关联日志 |
 | [路由与中间件](routes_middleware.md) | HttpTraceMiddleware 自动追踪 |
+| [数据库组件](database.md) | SQL 自动生成 span |

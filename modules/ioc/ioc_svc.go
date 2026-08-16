@@ -13,6 +13,9 @@ const (
 )
 
 // Container 依赖注入容器，可实例化，支持多容器隔离。
+//
+// 并发约定：Set / SetWithName 仅允许在启动初始化阶段调用；初始化完成后
+// 容器进入只读，Get / Inject 可安全并发调用。运行时禁止再 Set（不加锁）。
 type Container struct {
 	values map[reflect.Type]map[string]reflect.Value
 }
@@ -45,6 +48,8 @@ func (c *Container) Set(interfaceObj any, instance any) {
 }
 
 // SetWithName 以指定名称注册实例。
+//
+// 仅限启动初始化阶段调用（见 Container 的并发约定），运行时调用会导致数据竞争。
 func (c *Container) SetWithName(interfaceObj any, name string, instance any) {
 	interfaceType := getInterfaceType(interfaceObj)
 	instanceType := reflect.TypeOf(instance)
