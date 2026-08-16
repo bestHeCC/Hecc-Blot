@@ -412,7 +412,6 @@ SSE（Server-Sent Events）与 API 共享 Gin Engine 和 IMiddleware 接口。�
 server:
   port: "9500"
   env: dev                 # dev | test | product
-  name: Hecc-Blot          # 服务名称
   read_timeout: 30         # 读取超时（秒）
   write_timeout: 30        # 写入超时（秒）
   idle_timeout: 60         # 空闲超时（秒）

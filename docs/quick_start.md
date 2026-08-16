@@ -17,7 +17,6 @@ go mod tidy
 server:
   port: "9500"
   env: dev
-  name: Hecc-Blot
   read_timeout: 30
   write_timeout: 30
   idle_timeout: 60
