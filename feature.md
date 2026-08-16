@@ -20,10 +20,10 @@
 
 | # | 位置 | 问题 | 建议 |
 |---|------|------|------|
-| 1 | `modules/ioc` | `Container.values` 无锁，运行时并发 `Set` 有数据竞争 | 文档明确「Set 仅在初始化阶段调用」，或加 RWMutex |
+| 1 | `modules/ioc` | `Container.values` 无锁，运行时并发 `Set` 有数据竞争 | ✅ 已约定：`docs/ioc_injection.md`「并发约定」+ `ioc_svc.go` 注释明确 Set 仅初始化阶段调用 |
 | 2 | `modules/api` | `registerAPI` 每请求 `reflect.New` + `Inject` 反射开销 | 实例隔离要求每请求新实例，反射不可避免；可缓存类型元数据 |
 | 3 | `modules/sse` | `sseWriter` 用 mutex 串行化心跳与业务写入，高频推送有锁竞争 | 4.1 异步模型可缓解 |
-| 4 | `modules/log` | `sls_svc` 中 `_ = client.PutLogs(...)` 忽略错误，上传失败静默丢失 | 至少记录错误日志 |
+| 4 | `modules/log` | `sls_svc` 中 `_ = client.PutLogs(...)` 忽略错误，上传失败静默丢失 | 暂缓（决定不管） |
 | 5 | `modules/api` | API 层无请求频率限流（防刷） | 可参考 SSE 信号量方案加限流中间件 |
 | 6 | 各模块 | `sse/core/api/error/trace` 无测试，刚做的心跳/限流/优雅关闭无保护 | 补单测（`httptest` + 假 Flusher 即可） |
 | 7 | `docs/` | 文档全部中文，英文用户仅有 README_EN.md | 后续翻译 docs |
