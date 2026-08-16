@@ -149,6 +149,67 @@ apiGroup.Post("account/add", &AddApi{})
 
 ***
 
+## 请求限流中间件
+
+框架提供 `RateLimitMiddleware`，按客户端 IP 限流，超限返回 `429` + 统一响应格式（`code=40006`「请求过于频繁」）。
+
+### 1. 后端与算法
+
+限流器通过 `hecc-core/contract/ratelimit.RateLimiter` 接口抽象，两种后端：
+
+| 后端 | 构造方式 | 适用场景 |
+|------|---------|---------|
+| 内存 | `api.NewMemoryLimiter(cfg)` | 单实例 |
+| Redis | `cache.NewRedisLimiter(cacheFactory.Redis(), cfg)` | 集群（跨实例统一计数，Lua 原子，复用缓存 Redis 实例） |
+
+内存后端支持两种算法（由 `cfg.Algorithm` 决定）：
+
+| 算法 | 值 | 说明 |
+|------|-----|------|
+| 滑动窗口 | `sliding_window`（默认） | 窗口内计数，边界平滑无突发 |
+| 令牌桶 | `token_bucket` | 恒定速率，允许短时突发 |
+
+> Redis 后端当前为滑动窗口实现；Redis 异常时 fail-open（放行），保证限流组件不拖垮业务。
+
+### 2. 使用
+
+```go
+import (
+    iCoreRatelimit "github.com/bestHeCC/hecc-core/contract/ratelimit"
+)
+
+// 内存后端（单实例）
+limiter := api.NewMemoryLimiter(iCoreRatelimit.Config{
+    Algorithm: iCoreRatelimit.SlidingWindow,
+    Limit:     100, // 窗口内最大请求数
+    Window:    60,  // 窗口时长（秒）
+})
+apiHandle.Middleware(api.NewRateLimitMiddleware(limiter))
+
+// Redis 后端（集群，复用 cacheFactory 的 Redis 实例）
+limiter = cache.NewRedisLimiter(cacheFactory.Redis(), iCoreRatelimit.Config{
+    Algorithm: iCoreRatelimit.SlidingWindow,
+    Limit:     100,
+    Window:    60,
+})
+apiHandle.Middleware(api.NewRateLimitMiddleware(limiter))
+```
+
+### 3. 配置
+
+是否启用限流由组装层是否注册中间件决定（见上一节），配置仅描述启用后的后端/算法/阈值。
+
+```yaml
+server:
+  rate_limit:
+    backend: memory            # memory | redis
+    algorithm: sliding_window  # sliding_window | token_bucket
+    limit: 100                 # 窗口内最大请求数 / 桶容量
+    window: 60                 # 窗口时长（秒）
+```
+
+***
+
 ## API 定义规范
 
 ### 1. API 接口

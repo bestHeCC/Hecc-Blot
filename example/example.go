@@ -12,12 +12,13 @@ import (
 	cacheContract "github.com/bestHeCC/hecc-cache/contract"
 	iCoreApi "github.com/bestHeCC/hecc-core/contract/api"
 	iCoreError "github.com/bestHeCC/hecc-core/contract/error"
+	iCoreRatelimit "github.com/bestHeCC/hecc-core/contract/ratelimit"
 	entityApi "github.com/bestHeCC/hecc-core/entity/api"
-	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 	"github.com/bestHeCC/hecc-core/enum/response"
 	"github.com/bestHeCC/hecc-core/util"
 	"github.com/bestHeCC/hecc-db"
 	dbContract "github.com/bestHeCC/hecc-db/contract"
+	dbEnum "github.com/bestHeCC/hecc-db/enum/db"
 	errorSvc "github.com/bestHeCC/hecc-error"
 	"github.com/bestHeCC/hecc-log"
 	logContract "github.com/bestHeCC/hecc-log/contract"
@@ -67,6 +68,8 @@ func main() {
 	apiHandle := api.NewApiSvc(&config.Server, responseSvc, container)
 	// 链路追踪：由组装层显式注册中间件（api 不感知 trace）
 	apiHandle.Middleware(trace.NewHttpMiddleware(traceSvc))
+	// 请求限流：组装层显式注册（是否启用由本行决定，配置只描述后端/算法/阈值）
+	apiHandle.Middleware(api.NewRateLimitMiddleware(newRateLimiter(config, cacheFactory)))
 	registerRoutes(apiHandle)
 
 	sseHandle := sse.NewSseSvc(apiHandle.Engine(), container)
@@ -107,6 +110,20 @@ func initConf(configPath string) *Config {
 		panic(fmt.Errorf("解析配置文件失败: %w", err))
 	}
 	return &conf
+}
+
+// newRateLimiter 根据配置选择限流后端：backend=redis 复用 cacheFactory 的 Redis 实例
+// （集群统一计数），否则用内存限流（单实例）。算法由 config.Server.RateLimit.Algorithm 决定。
+func newRateLimiter(config *Config, cacheFactory cacheContract.ICacheFactory) iCoreRatelimit.RateLimiter {
+	cfg := iCoreRatelimit.Config{
+		Algorithm: iCoreRatelimit.Algorithm(config.Server.RateLimit.Algorithm),
+		Limit:     config.Server.RateLimit.Limit,
+		Window:    config.Server.RateLimit.Window,
+	}
+	if config.Server.RateLimit.Backend == "redis" {
+		return cache.NewRedisLimiter(cacheFactory.Redis(), cfg)
+	}
+	return api.NewMemoryLimiter(cfg)
 }
 
 // ===== 3. Model 定义 =====
